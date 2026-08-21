@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMECC — Báo cáo Vật tư</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #0054a6;
+    --blue: #4299e1;
+    --teal: #26c6a4;
+    --orange: #f7a531;
+    --success: #2fb344;
+    --warning: #f76707;
+    --danger: #d63939;
+    --info: #17a2b8;
+    --body-bg: #f1f5f9;
+    --card-bg: #ffffff;
+    --border: #e6e7e9;
+    --muted: #6c757d;
+    --text: #1d273b;
+    --hover: #f8fafc;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--body-bg); color: var(--text); font-size: 14px; line-height: 1.5;
+  }
+
+  /* HEADER */
+  header {
+    background: #fff; border-bottom: 1px solid var(--border); height: 56px;
+    display: flex; align-items: center; padding: 0 24px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 32px; height: 32px; background: var(--primary); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .brand-text { font-size: 15px; font-weight: 600; }
+  .brand-sub { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+  .header-right .kv { font-family: monospace; }
+
+  /* NAV */
+  .nav-pages {
+    background: #fff; padding: 0 24px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 4px; position: sticky; top: 56px; z-index: 90;
+  }
+  .nav-page {
+    padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s;
+  }
+  .nav-page:hover { color: var(--text); }
+  .nav-page.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* PAGE TITLE */
+  .page-header { padding: 20px 24px 0; }
+  .page-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-desc { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; margin: 0 24px 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .filter-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .filter-input {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; background: #fff; min-width: 130px;
+  }
+  .proj-slicer { min-width: 180px; font-weight: 600; color: var(--primary); }
+  .filter-badge { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .filter-badge b { color: var(--text); font-weight: 600; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #dbeafe; color: var(--primary); font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px; margin-left: 8px;
+  }
+
+  /* METRICS */
+  .content { padding: 0 24px 24px; }
+  .metrics-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin-bottom: 20px;
+  }
+  .metric-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .metric-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); margin-bottom: 6px;
+  }
+  .metric-value {
+    font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums;
+    display: inline-block; margin-right: 8px;
+  }
+  .metric-unit { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .metric-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 20px; vertical-align: middle;
+  }
+  .badge-success { background: #d1fae5; color: #065f46; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+  .badge-neutral { background: #f1f5f9; color: #475569; }
+
+  .info-box { color: #fff; border-radius: 8px; padding: 16px 20px; position: relative; overflow: hidden; }
+  .info-box .metric-label { color: rgba(255,255,255,.85); }
+  .info-box .metric-value { color: #fff; }
+  .info-box .metric-sub { color: rgba(255,255,255,.85); }
+  .info-box .metric-unit { color: rgba(255,255,255,.75); }
+  .info-primary { background: var(--primary); }
+  .info-success { background: var(--success); }
+  .info-warning { background: var(--warning); }
+  .info-danger { background: var(--danger); }
+  .info-box-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 44px; opacity: .18; }
+
+  /* CARD */
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px;
+  }
+  .card-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card-body { padding: 16px 20px; }
+  .card-body.no-pad { padding: 0; }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-2-8-4 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-2-8-4 { grid-template-columns: 1fr; }
+  }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: #f8fafc; }
+  thead th {
+    padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+    border-bottom: 2px solid var(--border); white-space: nowrap;
+  }
+  thead th.num { text-align: right; }
+  thead th.grp { text-align: center; background: #eef2f7; color: #334155; border-right: 1px solid var(--border); }
+  tbody td {
+    padding: 9px 12px; border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle; font-variant-numeric: tabular-nums;
+  }
+  tbody td.num { text-align: right; }
+  tbody tr:hover td { background: var(--hover); }
+  tbody tr.total-row td {
+    background: #f8fafc; font-weight: 700; color: var(--text);
+    border-top: 2px solid var(--border); border-bottom: 2px solid var(--border);
+  }
+  .cell-project { font-weight: 600; color: var(--primary); }
+  .cell-muted { color: var(--muted); }
+
+  .pbar { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+  .pbar-track { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+  .pbar-fill { height: 100%; border-radius: 3px; }
+  .pbar-txt { font-size: 12px; font-weight: 600; min-width: 40px; text-align: right; }
+
+  /* SUB TABS */
+  .sub-tabs {
+    display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--border);
+    background: #fafbfc;
+  }
+  .sub-tab {
+    padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s;
+  }
+  .sub-tab:hover { color: var(--text); }
+  .sub-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: #fff; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .chart-wrap { position: relative; height: 340px; }
+
+  .status-pill {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .status-pill::before { content: "●"; }
+
+  /* Waterfall legend */
+  .wf-legend {
+    display: flex; justify-content: center; gap: 20px; padding: 8px 0 0;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .wf-legend-item { display: flex; align-items: center; gap: 6px; }
+  .wf-legend-swatch { width: 14px; height: 10px; border-radius: 2px; }
+
+  .empty-state {
+    padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+
+  /* ===== GUIDE PAGE ===== */
+  .guide-wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 40px; }
+  .guide-toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 24px;
+  }
+  .guide-toc-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin-bottom: 10px;
+  }
+  .guide-toc ol { list-style: none; padding: 0; margin: 0; counter-reset: toc; }
+  .guide-toc ol li {
+    counter-increment: toc; padding: 6px 0; font-size: 13px;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    color: var(--text); border-bottom: 1px solid #f1f5f9;
+  }
+  .guide-toc ol li:last-child { border-bottom: none; }
+  .guide-toc ol li:hover { color: var(--primary); }
+  .guide-toc ol li::before {
+    content: counter(toc); width: 22px; height: 22px; background: #dbeafe;
+    color: var(--primary); border-radius: 50%; font-weight: 700; font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .guide-section {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 24px 28px; margin-bottom: 20px;
+  }
+  .guide-section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .step-badge {
+    width: 32px; height: 32px; background: var(--primary); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .guide-section h2 { font-size: 17px; font-weight: 700; }
+  .guide-section p { color: var(--text); font-size: 14px; margin-bottom: 12px; line-height: 1.65; }
+  .guide-section .note {
+    background: #fef9e7; border-left: 3px solid #f59e0b;
+    padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #78350f;
+    margin: 12px 0;
+  }
+  .guide-section .tip {
+    background: #eff6ff; border-left: 3px solid var(--primary);
+    padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e3a8a;
+    margin: 12px 0;
+  }
+  .guide-section ul { padding-left: 20px; margin: 8px 0; font-size: 14px; line-height: 1.7; }
+  .guide-section ul li { margin-bottom: 4px; }
+
+  /* Mock UI wrapper — dashed border indicates preview */
+  .mock {
+    background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px;
+    padding: 20px; margin: 16px 0; position: relative;
+  }
+  .mock-label {
+    position: absolute; top: -10px; left: 16px; background: #fff;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px;
+  }
+
+  /* Callout — arrow + text pointing at something */
+  .callout {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fef3c7; color: #92400e; padding: 6px 12px;
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  }
+  .callout::before { content: "👉"; }
+
+  /* Mock nav */
+  .mock-nav { display: flex; gap: 4px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; }
+  .mock-nav-item { padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
+  .mock-nav-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .mock-nav-item.highlight {
+    background: #fef3c7; color: #92400e; border-radius: 4px 4px 0 0;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, .5); }
+    50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+  }
+
+  .mock-filter {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .mock-input {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px;
+    font-size: 12px; background: #fff;
+  }
+  .mock-input.highlight { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.2); font-weight: 600; color: var(--primary); }
+
+  .mock-dropdown {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 0; max-width: 260px; box-shadow: 0 6px 16px rgba(0,0,0,.1);
+    margin-top: 8px;
+  }
+  .mock-dropdown-item {
+    padding: 6px 14px; font-size: 12px; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mock-dropdown-item.highlight { background: #dbeafe; color: var(--primary); font-weight: 600; }
+  .mock-dropdown-item.selected::after { content: "✓"; margin-left: auto; color: var(--primary); font-weight: 700; }
+
+  .arrow-down { color: #f59e0b; font-size: 20px; text-align: center; margin: 4px 0; }
+
+  .kv-pair { display: grid; grid-template-columns: 140px 1fr; gap: 10px; font-size: 13px; padding: 4px 0; }
+  .kv-pair b { color: var(--text); }
+  .kv-pair span { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>
+      <span class="brand-text">AMECC</span>
+      <span class="brand-sub">Phòng Mua sắm — Báo cáo Vật tư</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span>Cập nhật: <b style="color:var(--text)">19/08/2026 08:30</b></span>
+    <span class="kv">v2026.08</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav-pages">
+  <div class="nav-page active" data-page="guide">📖 Hướng dẫn sử dụng</div>
+  <div class="nav-page" data-page="overview">📊 Overview Material</div>
+  <div class="nav-page" data-page="status">📦 Material Status</div>
+</nav>
+
+<!-- =================== PAGE 1: OVERVIEW =================== -->
+<div class="page" id="page-overview">
+
+  <div class="page-header">
+    <div class="page-eyebrow">TRANG 1 — TỔNG QUAN VẬT TƯ</div>
+    <div class="page-title">Overview Material</div>
+    <div class="page-desc">Tổng khối lượng vật tư theo từng dự án — đã đặt hàng, đã về kho, còn thiếu.</div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Dự án</span>
+      <select class="filter-input proj-slicer">
+        <option value="ALL">Tất cả dự án</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Từ ngày</span>
+      <input type="date" class="filter-input" value="2026-01-01">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Đến ngày</span>
+      <input type="date" class="filter-input" value="2026-08-19">
+    </div>
+    <div class="filter-badge" id="ov-filter-badge"></div>
+  </div>
+
+  <div class="content">
+    <!-- KPIs -->
+    <div class="metrics-grid" id="ov-kpis"></div>
+
+    <!-- Charts -->
+    <div class="grid-2-8-4">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Dòng chảy vật tư — Waterfall</div>
+            <div class="card-sub">MPR → Purchased → Arrived → Balance (Tấn)</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-waterfall"></canvas></div>
+          <div class="wf-legend">
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--blue)"></span> TOTAL</div>
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--orange)"></span> DECREASE</div>
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--danger)"></span> BALANCE</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Purchased — Import vs Domestic</div>
+            <div class="card-sub">Cơ cấu nguồn mua theo Khối lượng + Giá trị</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail table -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Chi tiết theo Dự án</div>
+          <div class="card-sub">Bảng OverView_Material — 25 cột, gộp nhóm 4 tầng header</div>
+        </div>
+        <span class="metric-badge badge-neutral" id="ov-count-badge">7 dòng</span>
+      </div>
+      <div class="card-body no-pad">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2">STT</th>
+                <th rowspan="2">Dự án</th>
+                <th rowspan="2">Client</th>
+                <th class="grp num" colspan="3">PO (Tấn)</th>
+                <th class="grp num" colspan="2">MPR</th>
+                <th class="grp num" colspan="2">Purchased</th>
+                <th class="grp num" colspan="2">Arrived</th>
+                <th class="grp num" colspan="2">Balance</th>
+                <th rowspan="2">Trạng thái</th>
+              </tr>
+              <tr>
+                <th class="num">Total</th><th class="num">Client</th><th class="num">AMECC</th>
+                <th class="num">Weight</th><th class="num">% PO</th>
+                <th class="num">Weight</th><th class="num">% MPR</th>
+                <th class="num">Weight</th><th class="num">% MPR</th>
+                <th class="num">Weight</th><th class="num">%</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-overview"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== PAGE 2: MATERIAL STATUS =================== -->
+<div class="page" id="page-status">
+
+  <div class="page-header">
+    <div class="page-eyebrow">TRANG 2 — TRẠNG THÁI VẬT TƯ</div>
+    <div class="page-title">Material Status</div>
+    <div class="page-desc">Truy vết chi tiết theo 3 góc nhìn: Nhà cung cấp, Số MPR, và Loại vật tư.</div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Dự án</span>
+      <select class="filter-input proj-slicer">
+        <option value="ALL">Tất cả dự án</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Từ ngày</span>
+      <input type="date" class="filter-input" value="2026-01-01">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Đến ngày</span>
+      <input type="date" class="filter-input" value="2026-08-19">
+    </div>
+    <div class="filter-badge" id="st-filter-badge"></div>
+  </div>
+
+  <div class="card" style="margin: 0 24px 20px;">
+    <div class="sub-tabs">
+      <div class="sub-tab active" data-tab="supplier">🏭 Follow Supplier</div>
+      <div class="sub-tab" data-tab="mpr">📄 Follow MPR</div>
+      <div class="sub-tab" data-tab="mat">🔩 Follow Material Type</div>
+    </div>
+
+    <!-- TAB SUPPLIER -->
+    <div class="tab-panel active" id="tab-supplier">
+      <div class="card-body">
+        <div class="metrics-grid" id="sup-kpis" style="margin-bottom:16px;"></div>
+        <div class="grid-2-8-4" style="margin-bottom:16px;">
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Top Nhà cung cấp theo Balance</div>
+                <div class="card-sub">Ai đang nợ hàng nhiều nhất (Tấn)</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-sup-top"></canvas></div>
+            </div>
+          </div>
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Phân bổ trạng thái</div>
+                <div class="card-sub">Số NCC theo mức Arrived</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-sup-status"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th><th>Dự án</th><th>Nhà cung cấp</th>
+                <th class="num">Design (T)</th><th class="num">MPR (T)</th><th class="num">Inv (T)</th>
+                <th class="num">Purchased (T)</th><th class="num">Arrived (T)</th>
+                <th class="num">% Purch</th><th class="num">% Arr</th>
+                <th class="num">Balance (T)</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-supplier"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB MPR -->
+    <div class="tab-panel" id="tab-mpr">
+      <div class="card-body">
+        <div class="metrics-grid" id="mpr-kpis" style="margin-bottom:16px;"></div>
+        <div class="grid-2-8-4" style="margin-bottom:16px;">
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Top MPR theo Balance</div>
+                <div class="card-sub">MPR nào còn thiếu nhiều nhất (Tấn)</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-mpr-top"></canvas></div>
+            </div>
+          </div>
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Phân bổ MPR theo trạng thái</div>
+                <div class="card-sub">Số MPR theo mức Arrived</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-mpr-status"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th><th>Dự án</th><th>MPR No.</th>
+                <th class="num">Design (T)</th><th class="num">MPR (T)</th><th class="num">Inv (T)</th>
+                <th class="num">Purchased (T)</th><th class="num">Arrived (T)</th>
+                <th class="num">% Purch</th><th class="num">% Arr</th>
+                <th class="num">Balance (T)</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-mpr"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB MATERIAL TYPE -->
+    <div class="tab-panel" id="tab-mat">
+      <div class="card-body">
+        <div class="metrics-grid" id="mat-kpis" style="margin-bottom:16px;"></div>
+        <div class="grid-2-8-4" style="margin-bottom:16px;">
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Top loại vật tư theo Khối lượng</div>
+                <div class="card-sub">MPR vs Arrived (Tấn)</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-mat-top"></canvas></div>
+            </div>
+          </div>
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Cơ cấu nguồn cung</div>
+                <div class="card-sub">Import (USD) vs Domestic (VND) theo KL</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-mat-source"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th><th>Dự án</th><th>Code</th><th>Short Description</th>
+                <th class="num">Design (T)</th><th class="num">MPR (T)</th>
+                <th class="num">Purchased (T)</th><th class="num">Arrived (T)</th>
+                <th class="num">% Arr</th><th class="num">Balance (T)</th>
+                <th class="num">Amount USD</th><th class="num">Amount VND</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-mat"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- =================== PAGE 3: USER GUIDE =================== -->
+<div class="page active" id="page-guide">
+
+  <div class="page-header">
+    <div class="page-eyebrow">HƯỚNG DẪN</div>
+    <div class="page-title">📖 Hướng dẫn sử dụng báo cáo</div>
+    <div class="page-desc">Cách di chuyển giữa các trang, dùng bộ lọc và đọc biểu đồ.</div>
+  </div>
+
+  <div class="guide-wrap">
+
+    <!-- SECTION 1 -->
+    <section class="guide-section" id="s1">
+      <div class="guide-section-head">
+        <div class="step-badge">1</div>
+        <h2>Cấu trúc báo cáo</h2>
+      </div>
+      <p>Báo cáo gồm <b>2 trang chính</b> phục vụ 2 mục đích khác nhau:</p>
+      <ul>
+        <li><b>📊 Overview Material</b> — Tổng quan khối lượng vật tư theo từng dự án (đã đặt hàng, đã về kho, còn thiếu).</li>
+        <li><b>📦 Material Status</b> — Truy vết chi tiết theo 3 góc nhìn: Nhà cung cấp / Số MPR / Loại vật tư.</li>
+      </ul>
+      <div class="tip">💡 Thứ tự đọc gợi ý: mở <b>Overview Material</b> trước để nắm cục diện chung → nếu thấy dự án có vấn đề, chuyển qua <b>Material Status</b> để tìm nguyên nhân cụ thể.</div>
+    </section>
+
+    <!-- SECTION 2 -->
+    <section class="guide-section" id="s2">
+      <div class="guide-section-head">
+        <div class="step-badge">2</div>
+        <h2>Chuyển giữa các trang</h2>
+      </div>
+      <p>Click vào <b>tab trên cùng</b> để chuyển trang. Tab đang chọn có gạch chân màu xanh.</p>
+
+      <div class="mock">
+        <span class="mock-label">Thanh điều hướng</span>
+        <div class="mock-nav">
+          <div class="mock-nav-item active">📊 Overview Material</div>
+          <div class="mock-nav-item highlight">📦 Material Status</div>
+          <div class="mock-nav-item">📖 Hướng dẫn sử dụng</div>
+        </div>
+        <div style="margin-top:12px;"><span class="callout">Click để chuyển sang trang Material Status</span></div>
+      </div>
+    </section>
+
+    <!-- SECTION 3 -->
+    <section class="guide-section" id="s3">
+      <div class="guide-section-head">
+        <div class="step-badge">3</div>
+        <h2>Bộ lọc dự án — quan trọng nhất</h2>
+      </div>
+      <p>Đây là bộ lọc <b>toàn cục</b>: chọn 1 dự án thì <b>tất cả</b> KPI, biểu đồ và bảng trên trang đều tự động lọc lại theo dự án đó.</p>
+
+      <div class="mock">
+        <span class="mock-label">Bước 1 — Click vào dropdown</span>
+        <div class="mock-filter">
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Dự án</span>
+          <div class="mock-input highlight" style="min-width:180px;">Tất cả dự án ▾</div>
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Từ ngày</span>
+          <div class="mock-input">2026-01-01</div>
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Đến ngày</span>
+          <div class="mock-input">2026-08-19</div>
+        </div>
+        <div class="arrow-down">▼</div>
+        <span class="mock-label" style="left:16px;">Bước 2 — Chọn dự án cần xem</span>
+        <div class="mock-dropdown">
+          <div class="mock-dropdown-item selected">Tất cả dự án</div>
+          <div class="mock-dropdown-item">V314 — MARUBENI</div>
+          <div class="mock-dropdown-item">M304 — JGC</div>
+          <div class="mock-dropdown-item highlight">U285 — TOYO</div>
+          <div class="mock-dropdown-item">U315 — TECHNIP</div>
+          <div class="mock-dropdown-item">… và các dự án khác</div>
+        </div>
+        <div style="margin-top:12px;"><span class="callout">Chọn 1 dòng — cả trang sẽ lọc theo dự án đó</span></div>
+      </div>
+
+      <div class="tip">💡 <b>Sync giữa 2 trang</b>: nếu đang ở trang Overview Material chọn V314, khi chuyển sang Material Status thì cũng đang ở V314 luôn. Không cần chọn lại.</div>
+
+      <p style="margin-top:14px;">Khi đang lọc theo dự án, sẽ thấy <b>chip màu xanh</b> hiển thị bên phải cho biết đang xem gì:</p>
+      <div class="mock" style="padding:12px 20px;">
+        <div style="font-size:12px; color:var(--muted);">
+          Đang xem: <span class="filter-chip">🎯 V314</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4 -->
+    <section class="guide-section" id="s4">
+      <div class="guide-section-head">
+        <div class="step-badge">4</div>
+        <h2>Bộ lọc theo ngày</h2>
+      </div>
+      <p>Lọc dữ liệu theo <b>ngày phát hành MPR</b> (issue_date). Chỉ những MPR có issue_date nằm trong khoảng [Từ ngày, Đến ngày] mới được tính vào báo cáo.</p>
+      <div class="mock" style="padding:14px 20px;">
+        <div class="mock-filter">
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Từ ngày</span>
+          <div class="mock-input highlight">2026-01-01</div>
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Đến ngày</span>
+          <div class="mock-input highlight">2026-08-19</div>
+        </div>
+      </div>
+      <div class="note">⚠️ Đơn hàng phát hành ngoài khoảng ngày này sẽ <b>không hiển thị</b>, kể cả khi đã về kho. Nếu thấy số liệu thiếu bất thường, kiểm tra lại khoảng ngày trước.</div>
+    </section>
+
+    <!-- SECTION 5 -->
+    <section class="guide-section" id="s5">
+      <div class="guide-section-head">
+        <div class="step-badge">5</div>
+        <h2>Tab con trong trang Material Status</h2>
+      </div>
+      <p>Trong trang <b>Material Status</b> có 3 tab con — mỗi tab là 1 góc nhìn khác nhau về cùng một tập dữ liệu:</p>
+      <ul>
+        <li><b>🏭 Follow Supplier</b> — Nhóm theo nhà cung cấp. Trả lời: "NCC nào đang nợ hàng nhiều nhất?"</li>
+        <li><b>📄 Follow MPR</b> — Nhóm theo số MPR. Trả lời: "MPR nào đang xử lý dở, MPR nào còn chưa mua?"</li>
+        <li><b>🔩 Follow Material Type</b> — Nhóm theo loại vật tư (Code + Description). Trả lời: "Chi bao nhiêu cho từng loại vật tư (USD/VND)?"</li>
+      </ul>
+
+      <div class="mock">
+        <span class="mock-label">Sub-tabs bên trong Material Status</span>
+        <div class="mock-nav" style="background:#fafbfc;">
+          <div class="mock-nav-item active">🏭 Follow Supplier</div>
+          <div class="mock-nav-item highlight">📄 Follow MPR</div>
+          <div class="mock-nav-item">🔩 Follow Material Type</div>
+        </div>
+        <div style="margin-top:12px;"><span class="callout">Click để chuyển góc nhìn</span></div>
+      </div>
+    </section>
+
+
+  </div>
+</div>
+
+<script>
+/* =============== DATA =============== */
+const overviewData = [
+  // Import/Domestic split CHỈ có ở Purchased (weight + amount)
+  // pur = pur_imp + pur_dom; pur_amt_usd (Import), pur_amt_vnd (Domestic)
+  { proj: 'V314', client: 'MARUBENI',       type: 'HRSG',            po: 2280, po_c: 1131, po_a: 1149, mpr: 2201, pur: 1793, arr: 782,  inv: 25,
+    pur_imp: 1470, pur_dom: 323, pur_amt_usd: 985000,  pur_amt_vnd: 8200000000 },
+  { proj: 'M304', client: 'JGC',            type: 'Fire Heater',     po: 1740, po_c: 890,  po_a: 850,  mpr: 1662, pur: 1250, arr: 620,  inv: 18,
+    pur_imp: 750,  pur_dom: 500, pur_amt_usd: 645000,  pur_amt_vnd: 11500000000 },
+  { proj: 'U285', client: 'TOYO',           type: 'HRSG',            po: 1520, po_c: 780,  po_a: 740,  mpr: 1489, pur: 1310, arr: 890,  inv: 42,
+    pur_imp: 852,  pur_dom: 458, pur_amt_usd: 720000,  pur_amt_vnd: 9800000000 },
+  { proj: 'U315', client: 'TECHNIP',        type: 'Pressure Vessel', po: 1180, po_c: 620,  po_a: 560,  mpr: 1147, pur: 985,  arr: 720,  inv: 35,
+    pur_imp: 690,  pur_dom: 295, pur_amt_usd: 580000,  pur_amt_vnd: 7200000000 },
+  { proj: 'U319', client: 'JGC',            type: 'Conveyor',        po: 840,  po_c: 420,  po_a: 420,  mpr: 792,  pur: 640,  arr: 380,  inv: 60,
+    pur_imp: 192,  pur_dom: 448, pur_amt_usd: 145000,  pur_amt_vnd: 8600000000 },
+  { proj: 'E307', client: 'BREMBANA&ROLLE', type: 'Structure',       po: 480,  po_c: 240,  po_a: 240,  mpr: 471,  pur: 458,  arr: 456,  inv: 22,
+    pur_imp: 229,  pur_dom: 229, pur_amt_usd: 180000,  pur_amt_vnd: 2600000000 },
+  { proj: 'M270', client: 'HITACHI',        type: 'Structure',       po: 200,  po_c: 100,  po_a: 100,  mpr: 194,  pur: 192,  arr: 189,  inv: 16,
+    pur_imp: 134,  pur_dom: 58,  pur_amt_usd: 95000,   pur_amt_vnd: 320000000 },
+];
+
+const supplierData = [
+  { proj: 'U285', sup: 'AGE STEEL',        des: 258,  mpr: 258,  inv: 0,  pur: 0,    arr: 0 },
+  { proj: 'U285', sup: 'POSCO VN',         des: 450,  mpr: 450,  inv: 15, pur: 439,  arr: 128 },
+  { proj: 'U285', sup: 'JFE JAPAN',        des: 599,  mpr: 599,  inv: 0,  pur: 539,  arr: 320 },
+  { proj: 'U315', sup: 'HYUNDAI STEEL',    des: 470,  mpr: 470,  inv: 8,  pur: 420,  arr: 285 },
+  { proj: 'V314', sup: 'MARUBENI (MISP)',  des: 1131, mpr: 1131, inv: 0,  pur: 1131, arr: 0 },
+  { proj: 'V314', sup: 'NIPPON STEEL',     des: 540,  mpr: 540,  inv: 12, pur: 462,  arr: 382 },
+  { proj: 'M304', sup: 'ĐẦU TƯ TITAN',     des: 340,  mpr: 340,  inv: 5,  pur: 285,  arr: 178 },
+  { proj: 'M304', sup: 'KARL STORZ',       des: 420,  mpr: 420,  inv: 0,  pur: 380,  arr: 240 },
+  { proj: 'E307', sup: 'THÉP VIỆT ĐỨC',    des: 148,  mpr: 148,  inv: 0,  pur: 141,  arr: 143 },
+  { proj: 'U319', sup: 'HÒA PHÁT',         des: 380,  mpr: 380,  inv: 22, pur: 320,  arr: 195 },
+];
+
+const mprData = [
+  { proj: 'U285', mpr_no: 'DCC26-U285-0001-VTC', des: 152, mpr_w: 152, inv: 3,  pur: 148, arr: 95 },
+  { proj: 'U285', mpr_no: 'DCC26-U285-0002-VTC', des: 88,  mpr_w: 88,  inv: 0,  pur: 88,  arr: 88 },
+  { proj: 'U285', mpr_no: 'DCC26-U285-0003-VTC', des: 210, mpr_w: 210, inv: 12, pur: 198, arr: 120 },
+  { proj: 'V314', mpr_no: 'DCC26-V314-0001-VTC', des: 480, mpr_w: 480, inv: 0,  pur: 0,   arr: 0 },
+  { proj: 'V314', mpr_no: 'DCC26-V314-0002-VTC', des: 320, mpr_w: 320, inv: 5,  pur: 315, arr: 180 },
+  { proj: 'M304', mpr_no: 'DCC26-M304-0001-VTC', des: 195, mpr_w: 195, inv: 0,  pur: 182, arr: 145 },
+  { proj: 'U315', mpr_no: 'DCC26-U315-0001-VTC', des: 275, mpr_w: 275, inv: 8,  pur: 267, arr: 210 },
+  { proj: 'U319', mpr_no: 'DCC26-U319-0001-VTC', des: 180, mpr_w: 180, inv: 15, pur: 165, arr: 98 },
+  { proj: 'E307', mpr_no: 'DCC26-E307-0001-VTC', des: 148, mpr_w: 148, inv: 0,  pur: 141, arr: 143 },
+  { proj: 'M270', mpr_no: 'DCC26-M270-0001-VTC', des: 194, mpr_w: 194, inv: 2,  pur: 192, arr: 189 },
+];
+
+const matData = [
+  { proj: 'V314', code: 'MT-001', desc: 'HR Plate SS400 t=12mm',    des: 620, mpr: 620, pur: 512, arr: 320, usd: 385000, vnd: 0 },
+  { proj: 'V314', code: 'MT-002', desc: 'CS Pipe API 5L Gr.B',      des: 380, mpr: 380, pur: 340, arr: 180, usd: 245000, vnd: 0 },
+  { proj: 'U285', code: 'MT-003', desc: 'SS Plate SUS304 t=6mm',    des: 220, mpr: 220, pur: 218, arr: 190, usd: 198000, vnd: 0 },
+  { proj: 'U285', code: 'MT-004', desc: 'Bolt & Nut A193 B7',       des: 45,  mpr: 45,  pur: 44,  arr: 42,  usd: 62000,  vnd: 0 },
+  { proj: 'M304', code: 'MT-005', desc: 'Alloy Steel P22',          des: 320, mpr: 320, pur: 285, arr: 178, usd: 425000, vnd: 0 },
+  { proj: 'U315', code: 'MT-006', desc: 'HR Coil SS400',            des: 285, mpr: 285, pur: 262, arr: 210, usd: 0,      vnd: 6800000000 },
+  { proj: 'U315', code: 'MT-007', desc: 'Structural H-Beam',        des: 195, mpr: 195, pur: 180, arr: 165, usd: 0,      vnd: 4200000000 },
+  { proj: 'U319', code: 'MT-008', desc: 'Angle Bar L 75x75',        des: 128, mpr: 128, pur: 115, arr: 82,  usd: 0,      vnd: 2850000000 },
+  { proj: 'E307', code: 'MT-009', desc: 'Welding Consumables',      des: 12,  mpr: 12,  pur: 12,  arr: 12,  usd: 45000,  vnd: 0 },
+  { proj: 'M270', code: 'MT-010', desc: 'Gasket & Sealing',         des: 8,   mpr: 8,   pur: 8,   arr: 8,   usd: 18000,  vnd: 0 },
+];
+
+/* =============== GLOBAL STATE =============== */
+let currentProject = 'ALL';
+
+/* =============== HELPERS =============== */
+const fmt  = (n) => n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+const fmt1 = (n) => n.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+
+function pbar(pct) {
+  const w = Math.max(0, Math.min(100, pct));
+  let color = 'var(--success)';
+  if (pct < 50) color = 'var(--danger)';
+  else if (pct < 80) color = 'var(--warning)';
+  return `<div class="pbar"><div class="pbar-track"><div class="pbar-fill" style="width:${w}%; background:${color}"></div></div><span class="pbar-txt">${pct.toFixed(1)}%</span></div>`;
+}
+function statusPill(arrRatio) {
+  if (arrRatio >= 90) return `<span class="status-pill badge-success">Đủ</span>`;
+  if (arrRatio >= 50) return `<span class="status-pill badge-info">Đang nhập</span>`;
+  if (arrRatio >= 20) return `<span class="status-pill badge-warning">Chú ý</span>`;
+  return `<span class="status-pill badge-danger">Rủi ro</span>`;
+}
+function filterByProj(arr) {
+  return currentProject === 'ALL' ? arr : arr.filter(r => r.proj === currentProject);
+}
+
+/* =============== POPULATE SLICERS =============== */
+document.querySelectorAll('.proj-slicer').forEach(sel => {
+  overviewData.forEach(r => {
+    sel.insertAdjacentHTML('beforeend', `<option value="${r.proj}">${r.proj} — ${r.client}</option>`);
+  });
+  sel.addEventListener('change', (e) => {
+    currentProject = e.target.value;
+    // sync all slicers
+    document.querySelectorAll('.proj-slicer').forEach(s => s.value = currentProject);
+    refreshAll();
+  });
+});
+
+/* =============== OVERVIEW: KPIs =============== */
+function renderOverviewKPIs() {
+  const rows = filterByProj(overviewData);
+  const t = rows.reduce((a, r) => ({
+    po: a.po + r.po, mpr: a.mpr + r.mpr, pur: a.pur + r.pur,
+    arr: a.arr + r.arr, inv: a.inv + r.inv,
+  }), { po:0, mpr:0, pur:0, arr:0, inv:0 });
+  const bal = t.mpr - t.arr - t.inv;
+  const mprR = t.po ? (t.mpr / t.po * 100) : 0;
+  const purR = t.mpr ? ((t.pur + t.inv) / t.mpr * 100) : 0;
+  const arrR = t.mpr ? ((t.arr + t.inv) / t.mpr * 100) : 0;
+  const balR = t.mpr ? (bal / t.mpr * 100) : 0;
+
+  document.getElementById('ov-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL PO</div>
+      <div><span class="metric-value">${fmt(t.po)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.length} dự án đang theo dõi</div>
+      <div class="info-box-icon">📋</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">KL MPR phát hành</div>
+      <div><span class="metric-value">${fmt(t.mpr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-info">${mprR.toFixed(1)}% / PO</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">KL đã mua (Purchased)</div>
+      <div><span class="metric-value">${fmt(t.pur)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-info">${purR.toFixed(1)}% / MPR</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">KL đã về kho (Arrived)</div>
+      <div><span class="metric-value">${fmt(t.arr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub"><span class="metric-badge ${arrR>=70?'badge-success':arrR>=40?'badge-warning':'badge-danger'}">${arrR.toFixed(1)}% / MPR</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Balance còn thiếu</div>
+      <div><span class="metric-value" style="color:var(--danger)">${fmt(Math.max(0,bal))}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-danger">${Math.max(0,balR).toFixed(1)}% / MPR</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tồn kho hiện tại</div>
+      <div><span class="metric-value">${fmt(t.inv)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">Inventory sẵn sàng cấp</div>
+    </div>
+  `;
+}
+
+/* =============== OVERVIEW: WATERFALL CHART =============== */
+let waterfallChart = null;
+
+function computeWaterfall() {
+  const rows = filterByProj(overviewData);
+  const t = rows.reduce((a, r) => ({
+    mpr: a.mpr + r.mpr, pur: a.pur + r.pur,
+    arr: a.arr + r.arr, inv: a.inv + r.inv,
+  }), { mpr:0, pur:0, arr:0, inv:0 });
+  const bal = Math.max(0, t.mpr - t.arr - t.inv);
+  return { mpr: t.mpr, pur: t.pur, arr: t.arr, bal };
+}
+
+/*
+ * Waterfall bar layout:
+ * Bar 1 "Total MPR" — BLUE total, [0, mpr]
+ * Bar 2 "Purchased" — ORANGE decrease, floating [pur, mpr]  (delta = mpr - pur)
+ * Bar 3 "Arrived"   — ORANGE decrease, floating [arr, pur]  (delta = pur - arr)
+ * Bar 4 "Balance"   — RED total, [0, bal]  (= mpr - arr - inv)
+ */
+function buildWaterfall(t) {
+  return {
+    bars: [
+      { label: 'Total MPR', range: [0, t.mpr],   type: 'total',    value: t.mpr, color: '#0054a6' },
+      { label: 'Purchased', range: [t.pur, t.mpr], type: 'decrease', value: t.pur, color: '#f7a531', delta: t.mpr - t.pur },
+      { label: 'Arrived',   range: [t.arr, t.pur], type: 'decrease', value: t.arr, color: '#f7a531', delta: t.pur - t.arr },
+      { label: 'Balance',   range: [0, t.bal],   type: 'total',    value: t.bal, color: '#d63939' },
+    ]
+  };
+}
+
+const waterfallLabelsPlugin = {
+  id: 'wfLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx, scales: { y } } = chart;
+    const meta = chart.getDatasetMeta(0);
+    const bars = chart.$wfBars || [];
+    if (!meta || !meta.data) return;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    meta.data.forEach((bar, i) => {
+      const b = bars[i]; if (!b) return;
+      const topY = Math.min(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
+      const btmY = Math.max(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
+      const midY = (topY + btmY) / 2;
+
+      if (b.type === 'total') {
+        // Total bars (PO, Balance): show absolute value above bar
+        ctx.fillStyle = '#1d273b';
+        ctx.font = '700 12px -apple-system, sans-serif';
+        ctx.fillText(fmt(b.value), bar.x, topY - 6);
+      } else if (b.type === 'decrease' && b.delta > 0) {
+        // Decrease bars (Purchased, Arrived): show ONLY delta amount
+        const label = `−${fmt(b.delta)}`;
+        if ((btmY - topY) > 22) {
+          // Bar tall enough: put delta inside bar (white text)
+          ctx.fillStyle = '#fff';
+          ctx.font = '700 12px -apple-system, sans-serif';
+          ctx.fillText(label, bar.x, midY + 4);
+        } else {
+          // Bar too short: put delta above bar (dark text)
+          ctx.fillStyle = '#f7a531';
+          ctx.font = '700 12px -apple-system, sans-serif';
+          ctx.fillText(label, bar.x, topY - 6);
+        }
+      }
+    });
+
+    // Connector lines between adjacent bars (dashed)
+    ctx.strokeStyle = '#94a3b8';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    for (let i = 0; i < meta.data.length - 1; i++) {
+      const b1 = bars[i], b2 = bars[i+1];
+      if (!b1 || !b2) continue;
+      // connect top of bar[i] to top of bar[i+1] IF they share level (waterfall continuity)
+      const barA = meta.data[i], barB = meta.data[i+1];
+      // For our layout: bar[0].range[1] = po = bar[1].range[1]; bar[1].range[0] = pur = bar[2].range[1]
+      // Draw connector at top edge of bar[i]
+      const level = b1.range[1] === b2.range[1] ? b1.range[1] : (b1.range[0] === b2.range[1] ? b1.range[0] : null);
+      // Simpler: connect po→po (bar0 top to bar1 top) and pur→pur (bar1 bottom to bar2 top)
+      let yLevel;
+      if (i === 0) yLevel = y.getPixelForValue(b1.range[1]); // po
+      else if (i === 1) yLevel = y.getPixelForValue(b1.range[0]); // pur (bottom of bar1 = top of bar2)
+      else continue;
+      ctx.beginPath();
+      ctx.moveTo(barA.x + barA.width / 2, yLevel);
+      ctx.lineTo(barB.x - barB.width / 2, yLevel);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+};
+
+function renderWaterfall() {
+  const t = computeWaterfall();
+  const wf = buildWaterfall(t);
+
+  if (waterfallChart) waterfallChart.destroy();
+
+  const ctx = document.getElementById('chart-waterfall');
+  waterfallChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: wf.bars.map(b => b.label),
+      datasets: [{
+        label: 'Khối lượng (Tấn)',
+        data: wf.bars.map(b => b.range),
+        backgroundColor: wf.bars.map(b => b.color),
+        borderRadius: 4,
+        borderSkipped: false,
+        barPercentage: 0.6,
+        categoryPercentage: 0.85,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 28 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const b = ctx.chart.$wfBars[ctx.dataIndex];
+              if (b.type === 'decrease') return [` Giá trị: ${fmt(b.value)} Tấn`, ` Giảm: −${fmt(b.delta)} Tấn`];
+              if (b.label === 'Balance') return [` Balance: ${fmt(b.value)} Tấn`, ` = MPR − Arrived − Inventory`];
+              return ` ${fmt(b.value)} Tấn`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Tấn', font: { size: 11 } },
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, callback: (v) => fmt(v) }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 12, weight: '600' } }
+        }
+      }
+    },
+    plugins: [waterfallLabelsPlugin]
+  });
+  waterfallChart.$wfBars = wf.bars;
+  waterfallChart.update();
+}
+
+/* =============== OVERVIEW: PURCHASED IMPORT vs DOMESTIC =============== */
+let donutChart = null;
+
+// Plugin to draw labels outside the doughnut slices (weight value only)
+const outsideLabelPlugin = {
+  id: 'outsideLabel',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data) return;
+
+    const total = chart.data.datasets[0].data.reduce((s, v) => s + v, 0);
+    if (!total) return;
+
+    ctx.save();
+    meta.data.forEach((arc, i) => {
+      const value = chart.data.datasets[0].data[i];
+      if (!value) return;
+      const label = chart.data.labels[i];
+      const color = chart.data.datasets[0].backgroundColor[i];
+
+      const { x, y, startAngle, endAngle, outerRadius } = arc.getProps(
+        ['x', 'y', 'startAngle', 'endAngle', 'outerRadius'], true
+      );
+      const midAngle = (startAngle + endAngle) / 2;
+
+      // Anchor point on the arc edge
+      const ax = x + Math.cos(midAngle) * outerRadius;
+      const ay = y + Math.sin(midAngle) * outerRadius;
+      // Bend point (short leader out)
+      const bx = x + Math.cos(midAngle) * (outerRadius + 12);
+      const by = y + Math.sin(midAngle) * (outerRadius + 12);
+      // Horizontal end
+      const isRight = Math.cos(midAngle) >= 0;
+      const ex = bx + (isRight ? 18 : -18);
+      const ey = by;
+
+      // Leader line
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+
+      // Label text (value on top, name below)
+      ctx.textAlign = isRight ? 'left' : 'right';
+      ctx.textBaseline = 'middle';
+      const tx = ex + (isRight ? 4 : -4);
+
+      ctx.fillStyle = color;
+      ctx.font = '700 12px -apple-system, sans-serif';
+      ctx.fillText(`${fmt(value)} T`, tx, ey - 7);
+
+      ctx.fillStyle = '#6c757d';
+      ctx.font = '600 10px -apple-system, sans-serif';
+      const pct = (value / total * 100).toFixed(1);
+      ctx.fillText(`${label} · ${pct}%`, tx, ey + 7);
+    });
+    ctx.restore();
+  }
+};
+
+function renderDonut() {
+  const rows = filterByProj(overviewData);
+  const t = rows.reduce((a, r) => ({
+    imp: a.imp + r.pur_imp,
+    dom: a.dom + r.pur_dom,
+  }), { imp:0, dom:0 });
+
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('chart-donut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Import', 'Domestic'],
+      datasets: [{
+        data: [t.imp, t.dom],
+        backgroundColor: ['#0054a6', '#2fb344'],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { left: 60, right: 60, top: 20, bottom: 20 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.label}: ${fmt(c.raw)} Tấn`
+          }
+        }
+      },
+      cutout: '58%'
+    },
+    plugins: [outsideLabelPlugin]
+  });
+}
+
+/* =============== OVERVIEW: TABLE =============== */
+function renderOverviewTable() {
+  const rows = filterByProj(overviewData);
+  const tbody = document.getElementById('tbody-overview');
+  tbody.innerHTML = '';
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="15" class="empty-state">Không có dữ liệu.</td></tr>`;
+    document.getElementById('ov-count-badge').textContent = '0 dòng';
+    return;
+  }
+
+  let sum = { po:0, po_c:0, po_a:0, mpr:0, pur:0, arr:0, inv:0 };
+  rows.forEach((r, i) => {
+    sum.po += r.po; sum.po_c += r.po_c; sum.po_a += r.po_a;
+    sum.mpr += r.mpr; sum.pur += r.pur; sum.arr += r.arr; sum.inv += r.inv;
+    const mprR = r.po ? (r.mpr / r.po * 100) : 0;
+    const purR = r.mpr ? ((r.pur + r.inv) / r.mpr * 100) : 0;
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    const bal  = Math.max(0, r.mpr - r.arr - r.inv);
+    const balR = r.mpr ? (bal / r.mpr * 100) : 0;
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td class="cell-muted">${r.client}</td>
+        <td class="num">${fmt(r.po)}</td>
+        <td class="num">${fmt(r.po_c)}</td>
+        <td class="num">${fmt(r.po_a)}</td>
+        <td class="num">${fmt(r.mpr)}</td>
+        <td class="num">${mprR.toFixed(1)}%</td>
+        <td class="num">${fmt(r.pur)}</td>
+        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${fmt(r.arr)}</td>
+        <td class="num">${pbar(arrR)}</td>
+        <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
+        <td class="num">${balR.toFixed(1)}%</td>
+        <td>${statusPill(arrR)}</td>
+      </tr>
+    `);
+  });
+  const sBal  = Math.max(0, sum.mpr - sum.arr - sum.inv);
+  const sMprR = sum.po ? (sum.mpr / sum.po * 100) : 0;
+  const sPurR = sum.mpr ? ((sum.pur + sum.inv) / sum.mpr * 100) : 0;
+  const sArrR = sum.mpr ? ((sum.arr + sum.inv) / sum.mpr * 100) : 0;
+  const sBalR = sum.mpr ? (sBal / sum.mpr * 100) : 0;
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr class="total-row">
+      <td colspan="2">TOTAL</td><td></td>
+      <td class="num">${fmt(sum.po)}</td><td class="num">${fmt(sum.po_c)}</td><td class="num">${fmt(sum.po_a)}</td>
+      <td class="num">${fmt(sum.mpr)}</td><td class="num">${sMprR.toFixed(1)}%</td>
+      <td class="num">${fmt(sum.pur)}</td><td class="num">${sPurR.toFixed(1)}%</td>
+      <td class="num">${fmt(sum.arr)}</td><td class="num">${sArrR.toFixed(1)}%</td>
+      <td class="num">${fmt(sBal)}</td><td class="num">${sBalR.toFixed(1)}%</td>
+      <td></td>
+    </tr>
+  `);
+  document.getElementById('ov-count-badge').textContent = `${rows.length} dòng`;
+}
+
+/* =============== MATERIAL STATUS: SUPPLIER =============== */
+let supTopChart = null, supStatusChart = null;
+
+function renderSupplierCharts(rows) {
+  // Top by Balance (max 8)
+  const withBal = rows.map(r => ({
+    sup: r.sup,
+    balance: Math.max(0, r.mpr - r.arr - r.inv)
+  })).filter(r => r.balance > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
+
+  if (supTopChart) supTopChart.destroy();
+  supTopChart = new Chart(document.getElementById('chart-sup-top'), {
+    type: 'bar',
+    data: {
+      labels: withBal.map(r => r.sup),
+      datasets: [{
+        label: 'Balance',
+        data: withBal.map(r => r.balance),
+        backgroundColor: '#d63939', borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} Tấn` } }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // Status buckets
+  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
+  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
+  rows.forEach(r => {
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    if (arrR >= 90) buckets['Đủ']++;
+    else if (arrR >= 50) buckets['Đang nhập']++;
+    else if (arrR >= 20) buckets['Chú ý']++;
+    else buckets['Rủi ro']++;
+  });
+
+  if (supStatusChart) supStatusChart.destroy();
+  supStatusChart = new Chart(document.getElementById('chart-sup-status'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw} NCC` } }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
+function renderSupplier() {
+  const rows = filterByProj(supplierData);
+  const tbody = document.getElementById('tbody-supplier');
+  tbody.innerHTML = '';
+
+  const uniqSup = new Set(rows.map(r => r.sup)).size;
+  let done = 0, risk = 0, waiting = 0;
+  rows.forEach(r => {
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    if (arrR >= 90) done++;
+    else if (arrR < 30) { risk++; waiting++; }
+    else if (arrR < 60) waiting++;
+  });
+
+  document.getElementById('sup-kpis').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Số Nhà cung cấp</div>
+      <div><span class="metric-value">${uniqSup}</span></div>
+      <div class="metric-sub">Đang có giao dịch</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">PO đang chờ hàng</div>
+      <div><span class="metric-value" style="color:var(--warning)">${waiting}</span></div>
+      <div class="metric-sub">Ordering / Waiting</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">NCC hoàn thành</div>
+      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
+      <div class="metric-sub">Ratio Arrived ≥ 90%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">NCC rủi ro cao</div>
+      <div><span class="metric-value" style="color:var(--danger)">${risk}</span></div>
+      <div class="metric-sub">Ratio Arrived &lt; 30%</div>
+    </div>
+  `;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Không có dữ liệu.</td></tr>`;
+    renderSupplierCharts(rows);
+    return;
+  }
+  rows.forEach((r, i) => {
+    const purR = r.mpr ? ((r.pur + r.inv) / r.mpr * 100) : 0;
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    const bal = Math.max(0, r.mpr - r.arr - r.inv);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td>${r.sup}</td>
+        <td class="num">${fmt(r.des)}</td>
+        <td class="num">${fmt(r.mpr)}</td>
+        <td class="num">${fmt(r.inv)}</td>
+        <td class="num">${fmt(r.pur)}</td>
+        <td class="num">${fmt(r.arr)}</td>
+        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${pbar(arrR)}</td>
+        <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
+        <td>${statusPill(arrR)}</td>
+      </tr>
+    `);
+  });
+  renderSupplierCharts(rows);
+}
+
+/* =============== MATERIAL STATUS: MPR =============== */
+let mprTopChart = null, mprStatusChart = null;
+
+function renderMPRCharts(rows) {
+  const withBal = rows.map(r => ({
+    mpr_no: r.mpr_no.replace('DCC26-', '').replace('-VTC', ''),
+    balance: Math.max(0, r.mpr_w - r.arr - r.inv)
+  })).filter(r => r.balance > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
+
+  if (mprTopChart) mprTopChart.destroy();
+  mprTopChart = new Chart(document.getElementById('chart-mpr-top'), {
+    type: 'bar',
+    data: {
+      labels: withBal.map(r => r.mpr_no),
+      datasets: [{ label: 'Balance', data: withBal.map(r => r.balance), backgroundColor: '#d63939', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} Tấn` } } },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10, family: 'monospace' } } }
+      }
+    }
+  });
+
+  // Status buckets
+  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
+  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
+  rows.forEach(r => {
+    const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
+    if (arrR >= 90) buckets['Đủ']++;
+    else if (arrR >= 50) buckets['Đang nhập']++;
+    else if (arrR >= 20) buckets['Chú ý']++;
+    else buckets['Rủi ro']++;
+  });
+
+  if (mprStatusChart) mprStatusChart.destroy();
+  mprStatusChart = new Chart(document.getElementById('chart-mpr-status'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw} MPR` } }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
+function renderMPR() {
+  const rows = filterByProj(mprData);
+  const tbody = document.getElementById('tbody-mpr');
+  tbody.innerHTML = '';
+
+  let done = 0, processing = 0, notPur = 0;
+  rows.forEach(r => {
+    const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
+    if (arrR >= 90) done++;
+    else if (arrR > 0) processing++;
+    if (r.pur === 0) notPur++;
+  });
+
+  document.getElementById('mpr-kpis').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Tổng số MPR</div>
+      <div><span class="metric-value">${rows.length}</span></div>
+      <div class="metric-sub">MPR duy nhất</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">MPR đã đủ hàng</div>
+      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
+      <div class="metric-sub">% Arr ≥ 90%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">MPR đang xử lý</div>
+      <div><span class="metric-value" style="color:var(--warning)">${processing}</span></div>
+      <div class="metric-sub">Partial arrival</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">MPR chưa mua</div>
+      <div><span class="metric-value" style="color:var(--danger)">${notPur}</span></div>
+      <div class="metric-sub">Purchased = 0</div>
+    </div>
+  `;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Không có dữ liệu.</td></tr>`;
+    renderMPRCharts(rows);
+    return;
+  }
+  rows.forEach((r, i) => {
+    const purR = r.mpr_w ? ((r.pur + r.inv) / r.mpr_w * 100) : 0;
+    const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
+    const bal = Math.max(0, r.mpr_w - r.arr - r.inv);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td style="font-family:monospace; font-size:12px;">${r.mpr_no}</td>
+        <td class="num">${fmt(r.des)}</td>
+        <td class="num">${fmt(r.mpr_w)}</td>
+        <td class="num">${fmt(r.inv)}</td>
+        <td class="num">${fmt(r.pur)}</td>
+        <td class="num">${fmt(r.arr)}</td>
+        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${pbar(arrR)}</td>
+        <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
+        <td>${statusPill(arrR)}</td>
+      </tr>
+    `);
+  });
+  renderMPRCharts(rows);
+}
+
+/* =============== MATERIAL STATUS: MATERIAL TYPE =============== */
+let matTopChart = null, matSourceChart = null;
+
+function renderMatCharts(rows) {
+  // Top 8 by MPR weight, showing MPR (grey) + Arrived (green) side-by-side
+  const top = [...rows].sort((a,b) => b.mpr - a.mpr).slice(0, 8);
+
+  if (matTopChart) matTopChart.destroy();
+  matTopChart = new Chart(document.getElementById('chart-mat-top'), {
+    type: 'bar',
+    data: {
+      labels: top.map(r => r.code),
+      datasets: [
+        { label: 'MPR',     data: top.map(r => r.mpr), backgroundColor: '#94a3b8', borderRadius: 3 },
+        { label: 'Arrived', data: top.map(r => r.arr), backgroundColor: '#2fb344', borderRadius: 3 },
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.dataset.label}: ${fmt(c.raw)} Tấn`,
+            afterBody: (items) => {
+              if (items.length < 2) return '';
+              const idx = items[0].dataIndex;
+              return `\n${top[idx].desc}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10, family: 'monospace' } } }
+      }
+    }
+  });
+
+  // Import (has usd) vs Domestic (has vnd) by weight
+  const impRows = rows.filter(r => r.usd > 0);
+  const domRows = rows.filter(r => r.vnd > 0);
+  const impWeight = impRows.reduce((s, r) => s + r.mpr, 0);
+  const domWeight = domRows.reduce((s, r) => s + r.mpr, 0);
+  const impUsd = impRows.reduce((s, r) => s + r.usd, 0);
+  const domVnd = domRows.reduce((s, r) => s + r.vnd, 0);
+
+  if (matSourceChart) matSourceChart.destroy();
+  matSourceChart = new Chart(document.getElementById('chart-mat-source'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Import', 'Domestic'],
+      datasets: [{ data: [impWeight, domWeight], backgroundColor: ['#0054a6', '#2fb344'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.label}: ${fmt(c.raw)} Tấn`,
+            afterLabel: c => c.dataIndex === 0 ? ` → $${fmt(impUsd)} USD` : ` → ${(domVnd/1e9).toFixed(2)} tỷ VND`
+          }
+        }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
+function renderMat() {
+  const rows = filterByProj(matData);
+  const tbody = document.getElementById('tbody-mat');
+  tbody.innerHTML = '';
+
+  const totalUsd = rows.reduce((s, r) => s + r.usd, 0);
+  const totalVnd = rows.reduce((s, r) => s + r.vnd, 0);
+  const heaviest = rows.reduce((m, r) => (!m || r.mpr > m.mpr) ? r : m, null);
+  const heaviestPct = heaviest && rows.length ? (heaviest.mpr / rows.reduce((s,r)=>s+r.mpr,0) * 100) : 0;
+
+  document.getElementById('mat-kpis').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Số nhóm vật tư</div>
+      <div><span class="metric-value">${rows.length}</span></div>
+      <div class="metric-sub">Theo Code + Description</div>
+    </div>
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng amount (USD)</div>
+      <div><span class="metric-value">${(totalUsd/1e6).toFixed(2)}</span><span class="metric-unit">M USD</span></div>
+      <div class="metric-sub">Purchased Import</div>
+    </div>
+    <div class="metric-card info-box info-success">
+      <div class="metric-label">Tổng amount (VND)</div>
+      <div><span class="metric-value">${(totalVnd/1e9).toFixed(1)}</span><span class="metric-unit">tỷ VND</span></div>
+      <div class="metric-sub">Purchased Domestic</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Loại vật tư nặng nhất</div>
+      <div><span class="metric-value" style="font-size:18px">${heaviest ? heaviest.desc.substring(0,18) : '—'}</span></div>
+      <div class="metric-sub">${heaviest ? `${fmt(heaviest.mpr)} Tấn · ${heaviestPct.toFixed(0)}%` : ''}</div>
+    </div>
+  `;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Không có dữ liệu.</td></tr>`;
+    renderMatCharts(rows);
+    return;
+  }
+  rows.forEach((r, i) => {
+    const arrR = r.mpr ? (r.arr / r.mpr * 100) : 0;
+    const bal = Math.max(0, r.mpr - r.arr);
+    const usdCell = r.usd > 0 ? `$${fmt(r.usd)}` : '<span class="cell-muted">—</span>';
+    const vndCell = r.vnd > 0 ? `${(r.vnd/1e9).toFixed(2)} tỷ` : '<span class="cell-muted">—</span>';
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td style="font-family:monospace; font-size:12px;">${r.code}</td>
+        <td>${r.desc}</td>
+        <td class="num">${fmt(r.des)}</td>
+        <td class="num">${fmt(r.mpr)}</td>
+        <td class="num">${fmt(r.pur)}</td>
+        <td class="num">${fmt(r.arr)}</td>
+        <td class="num">${pbar(arrR)}</td>
+        <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
+        <td class="num">${usdCell}</td>
+        <td class="num">${vndCell}</td>
+      </tr>
+    `);
+  });
+  renderMatCharts(rows);
+}
+
+/* =============== FILTER BADGES =============== */
+function updateBadges() {
+  const chip = currentProject === 'ALL'
+    ? `<span class="filter-chip">Tất cả dự án</span>`
+    : `<span class="filter-chip">🎯 ${currentProject}</span>`;
+  document.getElementById('ov-filter-badge').innerHTML = `Đang xem: ${chip}`;
+  document.getElementById('st-filter-badge').innerHTML = `Đang xem: ${chip}`;
+}
+
+/* =============== REFRESH ALL =============== */
+function refreshAll() {
+  updateBadges();
+  renderOverviewKPIs();
+  renderWaterfall();
+  renderDonut();
+  renderOverviewTable();
+  renderSupplier();
+  renderMPR();
+  renderMat();
+}
+
+/* =============== NAV =============== */
+document.querySelectorAll('.nav-page').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nav-page').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    const target = el.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + target).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+// TOC click → scroll to section
+document.querySelectorAll('.guide-toc li').forEach(li => {
+  li.addEventListener('click', () => {
+    const target = document.getElementById(li.dataset.goto);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+document.querySelectorAll('.sub-tab').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    const target = el.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + target).classList.add('active');
+  });
+});
+
+/* Initial render */
+refreshAll();
+</script>
+</body>
+</html>
