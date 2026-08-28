@@ -345,6 +345,7 @@
   <div class="nav-page active" data-page="guide">📖 Hướng dẫn sử dụng</div>
   <div class="nav-page" data-page="overview">📊 Overview Material</div>
   <div class="nav-page" data-page="status">📦 Material Status</div>
+  <div class="nav-page" data-page="logistic">🚢 Logistic</div>
 </nav>
 
 <!-- =================== PAGE 1: OVERVIEW =================== -->
@@ -753,6 +754,151 @@
   </div>
 </div>
 
+<!-- =================== PAGE 4: LOGISTIC =================== -->
+<div class="page" id="page-logistic">
+
+  <div class="page-header">
+    <div class="page-eyebrow">TRANG 4 — VẬN CHUYỂN VÀ THÔNG QUAN</div>
+    <div class="page-title">Logistic</div>
+    <div class="page-desc">Trạng thái vận chuyển của các shipment — đang trên biển, tồn ở port, đã về Amecc. Cảnh báo hàng quá hạn storage và hàng sắp cần dispatch.</div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Dự án</span>
+      <select class="filter-input proj-slicer">
+        <option value="ALL">Tất cả dự án</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Loại vận tải</span>
+      <select class="filter-input" id="lg-transport-slicer">
+        <option value="ALL">Tất cả</option>
+        <option value="SEA">🚢 SEA</option>
+        <option value="AIR">✈️ AIR</option>
+        <option value="TRUCK">🚚 TRUCK</option>
+      </select>
+    </div>
+    <div class="filter-badge" id="lg-filter-badge"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- KPI ROW 1: các trạng thái pipeline -->
+    <div class="metrics-grid" id="lg-kpis-pipeline"></div>
+
+    <!-- KPI ROW 2: cảnh báo -->
+    <div class="metrics-grid" id="lg-kpis-alert"></div>
+
+    <!-- Chart Row 1: Waterfall pipeline + Doughnut transport -->
+    <div class="grid-2-8-4">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Pipeline vận chuyển — Waterfall</div>
+            <div class="card-sub">Total → On Boat → At Port → At Amecc (Tấn)</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-lg-pipeline"></canvas></div>
+          <div class="wf-legend">
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--blue)"></span> TOTAL</div>
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--orange)"></span> DECREASE</div>
+            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--success)"></span> ARRIVED</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Phân bổ theo loại vận tải</div>
+            <div class="card-sub">Tỷ trọng KL đang tracking</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-lg-transport"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Row 2: Timeline 30 days arrival -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Lịch dự kiến về Amecc — 30 ngày tới</div>
+          <div class="card-sub">Tổng KL (Tấn) plan arrival theo ngày · Cột đỏ = shipment quá hạn (chưa arrival Amecc mặc dù plan đã qua)</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-lg-timeline"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Chart Row 3: Top supplier in-transit + Status distribution -->
+    <div class="grid-2-8-4" style="margin-top:20px;">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Top NCC đang có hàng vận chuyển</div>
+            <div class="card-sub">KL chưa arrival Amecc — sắp xếp giảm dần</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-lg-supplier"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Phân bố trạng thái</div>
+            <div class="card-sub">Số shipment theo giai đoạn</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="chart-lg-status"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table: shipment cần chú ý -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🚨 Shipment cần chú ý (Top 15)</div>
+          <div class="card-sub">Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)</div>
+        </div>
+      </div>
+      <div class="card-body no-pad">
+        <div class="table-wrap">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dự án</th>
+                <th>Supplier</th>
+                <th>PO No.</th>
+                <th>Bill No.</th>
+                <th class="num">KL (Tấn)</th>
+                <th>Vận tải</th>
+                <th>ETD</th>
+                <th>ETA Port</th>
+                <th>Storage due</th>
+                <th>Plan Arrival</th>
+                <th>Trạng thái</th>
+                <th class="num">Ngày còn</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-lg-alert"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script>
 /* =============== DATA =============== */
 const overviewData = [
@@ -811,6 +957,52 @@ const matData = [
   { proj: 'U319', code: 'MT-008', desc: 'Angle Bar L 75x75',        des: 128, mpr: 128, pur: 115, arr: 82,  usd: 0,      vnd: 2850000000 },
   { proj: 'E307', code: 'MT-009', desc: 'Welding Consumables',      des: 12,  mpr: 12,  pur: 12,  arr: 12,  usd: 45000,  vnd: 0 },
   { proj: 'M270', code: 'MT-010', desc: 'Gasket & Sealing',         des: 8,   mpr: 8,   pur: 8,   arr: 8,   usd: 18000,  vnd: 0 },
+];
+
+/* -----------------------------------------------------------------
+ * LOGISTIC DATA — 1 record = 1 shipment
+ * status: 'PENDING' (chưa xuất) | 'ON_BOAT' | 'AT_PORT' | 'AT_AMECC'
+ * transport: 'SEA' | 'AIR' | 'TRUCK'
+ * Ngày assume today = 2026-08-28
+ * ----------------------------------------------------------------- */
+const logisticData = [
+  // ===== ĐÃ VỀ AMECC =====
+  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25060101',   bill:'MRUB456712',       vessel:'EVER GIVEN 2607E',    transport:'SEA',   origin:'IMPORT',   qty:26.5, etd:'2026-06-10', eta:'2026-06-28', storage_due:'2026-07-08', plan_arrival:'2026-07-05', actual_arrival:'2026-07-04', status:'AT_AMECC' },
+  { proj:'V314', sup:'NIPPON STEEL',    po:'AMC-NIP/25062502',   bill:'NPNSTL-091234',   vessel:'ONE APUS 2612W',       transport:'SEA',   origin:'IMPORT',   qty:18.2, etd:'2026-06-25', eta:'2026-07-14', storage_due:'2026-07-24', plan_arrival:'2026-07-20', actual_arrival:'2026-07-19', status:'AT_AMECC' },
+  { proj:'U285', sup:'POSCO VN',        po:'AMC-POS/25070103',   bill:'POSC-77812',      vessel:'STARSHIP TAURUS 2707S',transport:'SEA',   origin:'IMPORT',   qty:32.1, etd:'2026-07-01', eta:'2026-07-16', storage_due:'2026-07-26', plan_arrival:'2026-07-22', actual_arrival:'2026-07-24', status:'AT_AMECC' },
+  { proj:'M304', sup:'ĐẦU TƯ TITAN',    po:'AMC-TIT/25071504',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:12.8, etd:'2026-07-20', eta:'2026-07-20', storage_due:'—',          plan_arrival:'2026-07-22', actual_arrival:'2026-07-22', status:'AT_AMECC' },
+  { proj:'E307', sup:'THÉP VIỆT ĐỨC',   po:'AMC-TVD/25073005',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:8.4,  etd:'2026-08-05', eta:'2026-08-05', storage_due:'—',          plan_arrival:'2026-08-06', actual_arrival:'2026-08-06', status:'AT_AMECC' },
+  { proj:'U315', sup:'HYUNDAI STEEL',   po:'AMC-HYD/25080106',   bill:'HYUN-45689',      vessel:'HMM SIRIUS 2707E',      transport:'SEA',   origin:'IMPORT',   qty:22.5, etd:'2026-07-25', eta:'2026-08-10', storage_due:'2026-08-20', plan_arrival:'2026-08-15', actual_arrival:'2026-08-16', status:'AT_AMECC' },
+
+  // ===== QUÁ HẠN STORAGE (chưa arrival, storage_due < 2026-08-28) =====
+  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25070207',   bill:'MRUB458891',       vessel:'MSC OSCAR 2707W',      transport:'SEA',   origin:'IMPORT',   qty:45.8, etd:'2026-07-05', eta:'2026-08-01', storage_due:'2026-08-11', plan_arrival:'2026-08-15', actual_arrival:null, status:'AT_PORT' },
+  { proj:'U285', sup:'JFE JAPAN',       po:'AMC-JFE/25071008',   bill:'JFE-660192',       vessel:'ONE HUMBER 2708E',     transport:'SEA',   origin:'IMPORT',   qty:38.2, etd:'2026-07-12', eta:'2026-08-05', storage_due:'2026-08-15', plan_arrival:'2026-08-18', actual_arrival:null, status:'AT_PORT' },
+  { proj:'M304', sup:'KARL STORZ',      po:'AMC-KRS/25071809',   bill:'KRLS-33456',       vessel:'HAPAG EXPRESS 2708',   transport:'SEA',   origin:'IMPORT',   qty:15.3, etd:'2026-07-15', eta:'2026-08-08', storage_due:'2026-08-18', plan_arrival:'2026-08-22', actual_arrival:null, status:'AT_PORT' },
+
+  // ===== TỒN Ở PORT — sắp hết hạn storage (storage_due ≤ 2026-09-05) =====
+  { proj:'U315', sup:'HYUNDAI STEEL',   po:'AMC-HYD/25072010',   bill:'HYUN-45822',       vessel:'HMM ALGECIRAS 2708',   transport:'SEA',   origin:'IMPORT',   qty:28.6, etd:'2026-07-22', eta:'2026-08-16', storage_due:'2026-08-26', plan_arrival:'2026-09-01', actual_arrival:null, status:'AT_PORT' },
+  { proj:'V314', sup:'NIPPON STEEL',    po:'AMC-NIP/25073011',   bill:'NPNSTL-092018',   vessel:'MOL TRIUMPH 2708W',     transport:'SEA',   origin:'IMPORT',   qty:19.4, etd:'2026-07-28', eta:'2026-08-19', storage_due:'2026-08-29', plan_arrival:'2026-09-02', actual_arrival:null, status:'AT_PORT' },
+  { proj:'U285', sup:'POSCO VN',        po:'AMC-POS/25080112',   bill:'POSC-78013',       vessel:'CMA CGM 2708',          transport:'SEA',   origin:'IMPORT',   qty:24.7, etd:'2026-08-01', eta:'2026-08-22', storage_due:'2026-09-01', plan_arrival:'2026-09-05', actual_arrival:null, status:'AT_PORT' },
+  { proj:'M270', sup:'HÒA PHÁT',        po:'AMC-HP/25081513',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:11.2, etd:'2026-08-25', eta:'2026-08-25', storage_due:'—',          plan_arrival:'2026-08-30', actual_arrival:null, status:'ON_BOAT' },
+
+  // ===== SẮP VỀ AMECC (plan_arrival trong 7 ngày tới) — kiểm tra hộ tống =====
+  { proj:'U319', sup:'HÒA PHÁT',        po:'AMC-HP/25081014',    bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:14.3, etd:'2026-08-26', eta:'2026-08-26', storage_due:'—',          plan_arrival:'2026-08-30', actual_arrival:null, status:'ON_BOAT' },
+  { proj:'E307', sup:'BREMBANA&ROLLE',  po:'AMC-BRB/25080515',   bill:'BREM-4471',        vessel:'AIR FRANCE CARGO 2708',transport:'AIR',   origin:'IMPORT',   qty:2.1,  etd:'2026-08-26', eta:'2026-08-28', storage_due:'2026-09-03', plan_arrival:'2026-08-31', actual_arrival:null, status:'ON_BOAT' },
+  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25081216',   bill:'MRUB459908',       vessel:'EVER FRAME 2708E',     transport:'SEA',   origin:'IMPORT',   qty:41.5, etd:'2026-08-12', eta:'2026-08-27', storage_due:'2026-09-06', plan_arrival:'2026-09-02', actual_arrival:null, status:'AT_PORT' },
+  { proj:'M304', sup:'ĐẦU TƯ TITAN',    po:'AMC-TIT/25082017',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:9.8,  etd:'2026-08-30', eta:'2026-08-30', storage_due:'—',          plan_arrival:'2026-09-01', actual_arrival:null, status:'PENDING' },
+  { proj:'U285', sup:'AGE STEEL',       po:'AMC-AGE/25081818',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:16.7, etd:'2026-08-28', eta:'2026-08-28', storage_due:'—',          plan_arrival:'2026-09-03', actual_arrival:null, status:'ON_BOAT' },
+
+  // ===== ĐANG TRÊN BIỂN (còn xa) =====
+  { proj:'V314', sup:'JFE JAPAN',       po:'AMC-JFE/25082019',   bill:'JFE-660345',       vessel:'ONE STORK 2709E',      transport:'SEA',   origin:'IMPORT',   qty:52.3, etd:'2026-08-20', eta:'2026-09-12', storage_due:'2026-09-22', plan_arrival:'2026-09-18', actual_arrival:null, status:'ON_BOAT' },
+  { proj:'U285', sup:'POSCO VN',        po:'AMC-POS/25082220',   bill:'POSC-78256',       vessel:'HMM SOUTHAMPTON 2709', transport:'SEA',   origin:'IMPORT',   qty:33.6, etd:'2026-08-22', eta:'2026-09-15', storage_due:'2026-09-25', plan_arrival:'2026-09-21', actual_arrival:null, status:'ON_BOAT' },
+  { proj:'M304', sup:'KARL STORZ',      po:'AMC-KRS/25082521',   bill:'KRLS-33612',       vessel:'MSC LORETO 2709W',     transport:'SEA',   origin:'IMPORT',   qty:8.8,  etd:'2026-08-25', eta:'2026-09-18', storage_due:'2026-09-28', plan_arrival:'2026-09-25', actual_arrival:null, status:'ON_BOAT' },
+  { proj:'U315', sup:'HYUNDAI STEEL',   po:'AMC-HYD/25082522',   bill:'HYUN-45965',       vessel:'HAPAG PATRIA 2709E',   transport:'SEA',   origin:'IMPORT',   qty:29.8, etd:'2026-08-24', eta:'2026-09-14', storage_due:'2026-09-24', plan_arrival:'2026-09-19', actual_arrival:null, status:'ON_BOAT' },
+
+  // ===== CHƯA XUẤT — plan issue upcoming =====
+  { proj:'U319', sup:'HÒA PHÁT',        po:'AMC-HP/25082923',    bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:22.5, etd:'2026-09-05', eta:'2026-09-05', storage_due:'—',          plan_arrival:'2026-09-08', actual_arrival:null, status:'PENDING' },
+  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25082924',   bill:'—',               vessel:'—',                    transport:'SEA',   origin:'IMPORT',   qty:38.9, etd:'2026-09-10', eta:'2026-10-02', storage_due:'2026-10-12', plan_arrival:'2026-10-08', actual_arrival:null, status:'PENDING' },
+  { proj:'M270', sup:'HITACHI',         po:'AMC-HIT/25082825',   bill:'—',               vessel:'—',                    transport:'AIR',   origin:'IMPORT',   qty:1.2,  etd:'2026-09-01', eta:'2026-09-03', storage_due:'2026-09-13', plan_arrival:'2026-09-06', actual_arrival:null, status:'PENDING' },
+  { proj:'E307', sup:'BREMBANA&ROLLE',  po:'AMC-BRB/25082626',   bill:'—',               vessel:'—',                    transport:'SEA',   origin:'IMPORT',   qty:15.5, etd:'2026-09-08', eta:'2026-09-30', storage_due:'2026-10-10', plan_arrival:'2026-10-05', actual_arrival:null, status:'PENDING' },
 ];
 
 /* =============== GLOBAL STATE =============== */
@@ -1593,6 +1785,346 @@ function renderMat() {
   renderMatCharts(rows);
 }
 
+/* =============== LOGISTIC =============== */
+const TODAY = new Date('2026-08-28');  // giả lập ngày hôm nay (khớp report cập nhật)
+const DAY_MS = 86400000;
+const parseD = s => (s === '—' || !s) ? null : new Date(s);
+const daysTo = s => { const d = parseD(s); return d ? Math.round((d - TODAY) / DAY_MS) : null; };
+const fmtD = s => s || '—';
+
+let lgTransport = 'ALL';
+function filterLogistic() {
+  return logisticData.filter(r =>
+    (currentProject === 'ALL' || r.proj === currentProject) &&
+    (lgTransport === 'ALL' || r.transport === lgTransport)
+  );
+}
+
+let lgPipelineChart = null, lgTransportChart = null, lgTimelineChart = null, lgSupChart = null, lgStatusChart = null;
+
+function renderLogistic() {
+  const rows = filterLogistic();
+
+  // ----- Compute states -----
+  const totalQty = rows.reduce((s, r) => s + r.qty, 0);
+  const onBoat   = rows.filter(r => r.status === 'ON_BOAT').reduce((s, r) => s + r.qty, 0);
+  const atPort   = rows.filter(r => r.status === 'AT_PORT').reduce((s, r) => s + r.qty, 0);
+  const atAmecc  = rows.filter(r => r.status === 'AT_AMECC').reduce((s, r) => s + r.qty, 0);
+  const pending  = rows.filter(r => r.status === 'PENDING').reduce((s, r) => s + r.qty, 0);
+
+  // Overdue = chưa arrival && storage_due < TODAY
+  const overdue = rows.filter(r => !r.actual_arrival && r.storage_due !== '—' && daysTo(r.storage_due) < 0);
+  const overdueQty = overdue.reduce((s, r) => s + r.qty, 0);
+
+  // Arrival trong 7 ngày tới, chưa arrival
+  const soonArrival = rows.filter(r => !r.actual_arrival && daysTo(r.plan_arrival) !== null && daysTo(r.plan_arrival) >= 0 && daysTo(r.plan_arrival) <= 7);
+  const soonQty = soonArrival.reduce((s, r) => s + r.qty, 0);
+
+  // Storage sắp hết hạn (5 ngày tới, chưa arrival)
+  const storageSoon = rows.filter(r => !r.actual_arrival && r.storage_due !== '—' && daysTo(r.storage_due) !== null && daysTo(r.storage_due) >= 0 && daysTo(r.storage_due) <= 5);
+
+  // ----- KPI Row 1: pipeline -----
+  document.getElementById('lg-kpis-pipeline').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL tracking</div>
+      <div><span class="metric-value">${fmt1(totalQty)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.length} shipment</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">🚢 Đang trên biển / đường</div>
+      <div><span class="metric-value" style="color:var(--info)">${fmt1(onBoat)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.filter(r=>r.status==='ON_BOAT').length} shipment · On Boat</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">🏭 Đang tồn ở port</div>
+      <div><span class="metric-value" style="color:var(--warning)">${fmt1(atPort)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.filter(r=>r.status==='AT_PORT').length} shipment · Chờ dispatch</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">✅ Đã về Amecc</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt1(atAmecc)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.filter(r=>r.status==='AT_AMECC').length} shipment · Completed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">📋 Chờ xuất</div>
+      <div><span class="metric-value" style="color:var(--muted)">${fmt1(pending)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.filter(r=>r.status==='PENDING').length} shipment · Pending ETD</div>
+    </div>
+  `;
+
+  // ----- KPI Row 2: cảnh báo -----
+  document.getElementById('lg-kpis-alert').innerHTML = `
+    <div class="metric-card" style="border-left:4px solid var(--danger);">
+      <div class="metric-label" style="color:var(--danger);">🚨 Quá hạn storage</div>
+      <div><span class="metric-value" style="color:var(--danger)">${overdue.length}</span><span class="metric-unit">shipment</span></div>
+      <div class="metric-sub">${fmt1(overdueQty)} Tấn · Rủi ro phí lưu bãi</div>
+    </div>
+    <div class="metric-card" style="border-left:4px solid var(--warning);">
+      <div class="metric-label" style="color:var(--warning);">⏰ Storage ≤ 5 ngày</div>
+      <div><span class="metric-value" style="color:var(--warning)">${storageSoon.length}</span><span class="metric-unit">shipment</span></div>
+      <div class="metric-sub">Sắp hết hạn — cần lấy hàng gấp</div>
+    </div>
+    <div class="metric-card" style="border-left:4px solid var(--success);">
+      <div class="metric-label" style="color:var(--success);">🔔 Về Amecc trong 7 ngày</div>
+      <div><span class="metric-value" style="color:var(--success)">${soonArrival.length}</span><span class="metric-unit">shipment</span></div>
+      <div class="metric-sub">${fmt1(soonQty)} Tấn · Chuẩn bị nhân lực xưởng</div>
+    </div>
+    <div class="metric-card" style="border-left:4px solid var(--info);">
+      <div class="metric-label" style="color:var(--info);">📊 Tỷ lệ đã về Amecc</div>
+      <div><span class="metric-value" style="color:var(--info)">${totalQty ? (atAmecc/totalQty*100).toFixed(1) : 0}</span><span class="metric-unit">%</span></div>
+      <div class="metric-sub">${fmt1(atAmecc)} / ${fmt1(totalQty)} Tấn</div>
+    </div>
+  `;
+
+  renderLogisticCharts(rows, { totalQty, onBoat, atPort, atAmecc, pending });
+  renderLogisticAlertTable(rows);
+}
+
+function renderLogisticCharts(rows, agg) {
+  // ===== CHART 1: Pipeline waterfall =====
+  // Total → After OnBoat leaves → After AtPort leaves → AtAmecc
+  const totalTracked = agg.totalQty - agg.pending;  // exclude pending (chưa vào pipeline)
+  const afterOnBoat  = totalTracked - agg.onBoat;
+  const afterAtPort  = afterOnBoat - agg.atPort;
+  const wf = [
+    { label: 'Total tracking',  range: [0, totalTracked], type:'total',   value: totalTracked, color:'#0054a6' },
+    { label: 'On Boat',         range: [afterOnBoat, totalTracked], type:'decrease', value: afterOnBoat, color:'#f7a531', delta: agg.onBoat },
+    { label: 'At Port',         range: [afterAtPort, afterOnBoat],  type:'decrease', value: afterAtPort, color:'#f7a531', delta: agg.atPort },
+    { label: 'At Amecc',        range: [0, agg.atAmecc], type:'total', value: agg.atAmecc, color:'#2fb344' },
+  ];
+  if (lgPipelineChart) lgPipelineChart.destroy();
+  const ctxP = document.getElementById('chart-lg-pipeline');
+  lgPipelineChart = new Chart(ctxP, {
+    type: 'bar',
+    data: {
+      labels: wf.map(b => b.label),
+      datasets: [{ data: wf.map(b => b.range), backgroundColor: wf.map(b => b.color), borderRadius: 4, borderSkipped:false, barPercentage:0.55 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const b = wf[c.dataIndex];
+              return b.type === 'total' ? ` ${b.label}: ${fmt1(b.value)} Tấn` : ` ${b.label}: -${fmt1(b.delta)} Tấn`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:11, weight:600}} },
+        y: { beginAtZero:true, ticks:{callback:v=>fmt(v), font:{size:10}}, grid:{color:'#f1f5f9'} }
+      }
+    },
+    plugins: [{
+      id:'wfLbl',
+      afterDatasetsDraw(ch) {
+        const meta = ch.getDatasetMeta(0);
+        const { ctx, scales:{y} } = ch;
+        ctx.save(); ctx.textAlign='center';
+        meta.data.forEach((bar,i) => {
+          const b = wf[i];
+          const topY = Math.min(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
+          const btmY = Math.max(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
+          if (b.type==='total') {
+            ctx.fillStyle='#1d273b'; ctx.font='700 12px sans-serif';
+            ctx.fillText(fmt1(b.value), bar.x, topY-6);
+          } else if (b.delta > 0) {
+            const label = `−${fmt1(b.delta)}`;
+            if ((btmY-topY) > 22) {
+              ctx.fillStyle='#fff'; ctx.font='700 12px sans-serif';
+              ctx.fillText(label, bar.x, (topY+btmY)/2 + 4);
+            } else {
+              ctx.fillStyle='#f7a531'; ctx.font='700 12px sans-serif';
+              ctx.fillText(label, bar.x, topY-6);
+            }
+          }
+        });
+        ctx.restore();
+      }
+    }]
+  });
+
+  // ===== CHART 2: Transport doughnut =====
+  const bySea = rows.filter(r=>r.transport==='SEA').reduce((s,r)=>s+r.qty,0);
+  const byAir = rows.filter(r=>r.transport==='AIR').reduce((s,r)=>s+r.qty,0);
+  const byTruck = rows.filter(r=>r.transport==='TRUCK').reduce((s,r)=>s+r.qty,0);
+  if (lgTransportChart) lgTransportChart.destroy();
+  lgTransportChart = new Chart(document.getElementById('chart-lg-transport'), {
+    type:'doughnut',
+    data:{
+      labels:['🚢 SEA','✈️ AIR','🚚 TRUCK'],
+      datasets:[{ data:[bySea, byAir, byTruck], backgroundColor:['#0054a6','#f7a531','#2fb344'], borderWidth:2, borderColor:'#fff' }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt1(c.raw)} Tấn (${(c.raw/(bySea+byAir+byTruck)*100).toFixed(1)}%)` } }
+      },
+      cutout:'58%'
+    }
+  });
+
+  // ===== CHART 3: Timeline 30 days =====
+  const timelineBuckets = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(TODAY.getTime() + i * DAY_MS);
+    timelineBuckets.push({ date: d, planQty: 0, overdueQty: 0 });
+  }
+  // Plan arrival trong 30 ngày
+  rows.forEach(r => {
+    if (r.actual_arrival) return;
+    const d = daysTo(r.plan_arrival);
+    if (d === null) return;
+    if (d >= 0 && d < 30) timelineBuckets[d].planQty += r.qty;
+  });
+  // Quá hạn: cộng dồn vào day 0
+  rows.forEach(r => {
+    if (r.actual_arrival) return;
+    const d = daysTo(r.plan_arrival);
+    if (d !== null && d < 0) timelineBuckets[0].overdueQty += r.qty;
+  });
+
+  if (lgTimelineChart) lgTimelineChart.destroy();
+  const timelineLabels = timelineBuckets.map(b => `${b.date.getDate()}/${b.date.getMonth()+1}`);
+  lgTimelineChart = new Chart(document.getElementById('chart-lg-timeline'), {
+    type:'bar',
+    data:{
+      labels: timelineLabels,
+      datasets:[
+        { label:'Quá hạn', data: timelineBuckets.map(b=>b.overdueQty), backgroundColor:'#d63939', stack:'s' },
+        { label:'Plan arrival', data: timelineBuckets.map(b=>b.planQty), backgroundColor:'#4299e1', stack:'s' },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top', labels:{font:{size:11}, boxWidth:12, padding:8}},
+        tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn` } }
+      },
+      scales:{
+        x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}, maxRotation:0}},
+        y:{stacked:true, beginAtZero:true, ticks:{callback:v=>fmt(v), font:{size:10}}, grid:{color:'#f1f5f9'}, title:{display:true, text:'Tấn', font:{size:11}}}
+      }
+    }
+  });
+
+  // ===== CHART 4: Top supplier by in-transit weight =====
+  const supMap = {};
+  rows.filter(r => r.status !== 'AT_AMECC').forEach(r => {
+    supMap[r.sup] = (supMap[r.sup] || 0) + r.qty;
+  });
+  const supTop = Object.entries(supMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  if (lgSupChart) lgSupChart.destroy();
+  lgSupChart = new Chart(document.getElementById('chart-lg-supplier'), {
+    type:'bar',
+    data:{
+      labels: supTop.map(s => s[0]),
+      datasets:[{ data: supTop.map(s => s[1]), backgroundColor:'#0054a6', borderRadius:3 }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label: c => ` ${fmt1(c.raw)} Tấn`}} },
+      scales:{
+        x:{beginAtZero:true, ticks:{callback:v=>fmt(v), font:{size:10}}, grid:{color:'#f1f5f9'}},
+        y:{grid:{display:false}, ticks:{font:{size:10}}}
+      }
+    }
+  });
+
+  // ===== CHART 5: Status distribution =====
+  if (lgStatusChart) lgStatusChart.destroy();
+  const statusMap = {
+    'PENDING':  rows.filter(r => r.status === 'PENDING').length,
+    'ON_BOAT':  rows.filter(r => r.status === 'ON_BOAT').length,
+    'AT_PORT':  rows.filter(r => r.status === 'AT_PORT').length,
+    'AT_AMECC': rows.filter(r => r.status === 'AT_AMECC').length,
+  };
+  lgStatusChart = new Chart(document.getElementById('chart-lg-status'), {
+    type:'polarArea',
+    data:{
+      labels:['📋 Pending','🚢 On Boat','🏭 At Port','✅ At Amecc'],
+      datasets:[{ data:[statusMap.PENDING, statusMap.ON_BOAT, statusMap.AT_PORT, statusMap.AT_AMECC],
+        backgroundColor:['#94a3b8cc','#4299e1cc','#f7a531cc','#2fb344cc'], borderWidth:2, borderColor:'#fff' }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw} shipment` } }
+      },
+      scales:{r:{ticks:{font:{size:9}}, grid:{color:'#e2e8f0'}}}
+    }
+  });
+}
+
+function renderLogisticAlertTable(rows) {
+  const tbody = document.getElementById('tbody-lg-alert');
+  tbody.innerHTML = '';
+
+  // Priority score: quá hạn = 1000-days_overdue; sắp về ≤7 = 100+urgency; storage due ≤5 = 200+urgency
+  const scored = rows.filter(r => !r.actual_arrival).map(r => {
+    const dueDays = daysTo(r.storage_due);
+    const arrDays = daysTo(r.plan_arrival);
+    let score = 0, tag = '';
+    if (dueDays !== null && dueDays < 0) { score = 1000 + Math.abs(dueDays); tag = 'OVERDUE_STORAGE'; }
+    else if (arrDays !== null && arrDays >= 0 && arrDays <= 7) { score = 500 - arrDays; tag = 'SOON_ARRIVAL'; }
+    else if (dueDays !== null && dueDays >= 0 && dueDays <= 5) { score = 300 - dueDays; tag = 'STORAGE_SOON'; }
+    return { ...r, _score: score, _tag: tag };
+  }).filter(r => r._score > 0).sort((a,b) => b._score - a._score).slice(0, 15);
+
+  if (scored.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">✅ Không có shipment cần chú ý.</td></tr>`;
+    return;
+  }
+
+  const transportIcon = { SEA:'🚢 SEA', AIR:'✈️ AIR', TRUCK:'🚚 TRUCK' };
+  const statusPillLg = (r) => {
+    if (r._tag === 'OVERDUE_STORAGE') return `<span class="status-pill badge-danger">🚨 Quá hạn</span>`;
+    if (r._tag === 'SOON_ARRIVAL') return `<span class="status-pill badge-success">🔔 Sắp về</span>`;
+    if (r._tag === 'STORAGE_SOON') return `<span class="status-pill badge-warning">⏰ Sắp hạn</span>`;
+    return `<span class="status-pill badge-info">${r.status}</span>`;
+  };
+  const daysDisplay = (r) => {
+    if (r._tag === 'OVERDUE_STORAGE') {
+      const d = daysTo(r.storage_due);
+      return `<span style="color:var(--danger); font-weight:700;">-${Math.abs(d)}d</span>`;
+    }
+    if (r._tag === 'SOON_ARRIVAL') {
+      const d = daysTo(r.plan_arrival);
+      return `<span style="color:var(--success); font-weight:600;">${d}d</span>`;
+    }
+    if (r._tag === 'STORAGE_SOON') {
+      const d = daysTo(r.storage_due);
+      return `<span style="color:var(--warning); font-weight:600;">${d}d</span>`;
+    }
+    return '—';
+  };
+
+  scored.forEach((r, i) => {
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td class="cell-muted">${r.sup}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.po}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.bill}</td>
+        <td class="num">${fmt1(r.qty)}</td>
+        <td>${transportIcon[r.transport] || r.transport}</td>
+        <td style="font-size:12px;">${fmtD(r.etd)}</td>
+        <td style="font-size:12px;">${fmtD(r.eta)}</td>
+        <td style="font-size:12px;">${fmtD(r.storage_due)}</td>
+        <td style="font-size:12px;">${fmtD(r.plan_arrival)}</td>
+        <td>${statusPillLg(r)}</td>
+        <td class="num">${daysDisplay(r)}</td>
+      </tr>
+    `);
+  });
+}
+
 /* =============== FILTER BADGES =============== */
 function updateBadges() {
   const chip = currentProject === 'ALL'
@@ -1600,6 +2132,8 @@ function updateBadges() {
     : `<span class="filter-chip">🎯 ${currentProject}</span>`;
   document.getElementById('ov-filter-badge').innerHTML = `Đang xem: ${chip}`;
   document.getElementById('st-filter-badge').innerHTML = `Đang xem: ${chip}`;
+  const lgChip = lgTransport === 'ALL' ? '' : `<span class="filter-chip">${lgTransport}</span>`;
+  document.getElementById('lg-filter-badge').innerHTML = `Đang xem: ${chip} ${lgChip}`;
 }
 
 /* =============== REFRESH ALL =============== */
@@ -1612,7 +2146,15 @@ function refreshAll() {
   renderSupplier();
   renderMPR();
   renderMat();
+  renderLogistic();
 }
+
+/* =============== LOGISTIC SLICER BIND =============== */
+document.getElementById('lg-transport-slicer').addEventListener('change', (e) => {
+  lgTransport = e.target.value;
+  updateBadges();
+  renderLogistic();
+});
 
 /* =============== NAV =============== */
 document.querySelectorAll('.nav-page').forEach(el => {
