@@ -1167,15 +1167,26 @@ let currentMatKey   = 'ALL';   // key = code|desc
 let currentPoNo     = 'ALL';
 
 /* =============== HELPERS =============== */
-const fmt  = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 }));
-const fmt1 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 }));
-// Compact for chart labels — shorter format for tight spaces
+// Số nguyên → không thập phân; số có thập phân → luôn 2 số sau dấu phẩy
+const fmt = (n) => {
+  if (n == null) return '—';
+  const num = Number(n);
+  if (Number.isInteger(num)) return num.toLocaleString('vi-VN');
+  return num.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+const fmt1 = fmt;
+// Compact for chart labels (M/K), cùng logic 2 số thập phân khi có decimal
 const fmtC = (n) => {
   if (n == null || n === 0) return '';
+  const format = (v) => {
+    const num = Number(v);
+    if (Number.isInteger(num)) return num.toLocaleString('vi-VN');
+    return num.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
   const abs = Math.abs(n);
-  if (abs >= 1e6) return (n/1e6).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + 'M';
-  if (abs >= 1e3) return (n/1e3).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + 'K';
-  return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+  if (abs >= 1e6) return format(n/1e6) + 'M';
+  if (abs >= 1e3) return format(n/1e3) + 'K';
+  return format(n);
 };
 
 /* =============== CHART DEFAULTS + DATALABELS =============== */
@@ -1200,7 +1211,7 @@ function pbar(pct) {
   let color = 'var(--success)';
   if (pct < 50) color = 'var(--danger)';
   else if (pct < 80) color = 'var(--warning)';
-  return `<div class="pbar"><div class="pbar-track"><div class="pbar-fill" style="width:${w}%; background:${color}"></div></div><span class="pbar-txt">${pct.toFixed(1)}%</span></div>`;
+  return `<div class="pbar"><div class="pbar-track"><div class="pbar-fill" style="width:${w}%; background:${color}"></div></div><span class="pbar-txt">${pct.toFixed(2)}%</span></div>`;
 }
 function statusPill(arrRatio) {
   if (arrRatio >= 98) return `<span class="status-pill badge-success">Đủ</span>`;
@@ -1408,22 +1419,22 @@ function renderOverviewKPIs() {
     <div class="metric-card">
       <div class="metric-label">KL MPR phát hành</div>
       <div><span class="metric-value">${fmt(t.mpr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub"><span class="metric-badge badge-info">${mprR.toFixed(1)}% / PO</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-info">${mprR.toFixed(2)}% / PO</span></div>
     </div>
     <div class="metric-card">
       <div class="metric-label">KL đã mua (Purchased)</div>
       <div><span class="metric-value">${fmt(t.pur)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub"><span class="metric-badge badge-info">${purR.toFixed(1)}% / MPR</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-info">${purR.toFixed(2)}% / MPR</span></div>
     </div>
     <div class="metric-card">
       <div class="metric-label">KL đã về kho (Arrived)</div>
       <div><span class="metric-value">${fmt(t.arr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub"><span class="metric-badge ${arrR>=98?'badge-success':arrR>=40?'badge-warning':'badge-danger'}">${arrR.toFixed(1)}% / MPR</span></div>
+      <div class="metric-sub"><span class="metric-badge ${arrR>=98?'badge-success':arrR>=40?'badge-warning':'badge-danger'}">${arrR.toFixed(2)}% / MPR</span></div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Balance còn thiếu</div>
       <div><span class="metric-value" style="color:var(--danger)">${fmt(Math.max(0,bal))}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub"><span class="metric-badge badge-danger">${Math.max(0,balR).toFixed(1)}% / MPR</span></div>
+      <div class="metric-sub"><span class="metric-badge badge-danger">${Math.max(0,balR).toFixed(2)}% / MPR</span></div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Tồn kho hiện tại</div>
@@ -1683,7 +1694,7 @@ function renderDonut() {
           callbacks: {
             label: (c) => {
               const total = c.dataset.data.reduce((a,b)=>a+b, 0);
-              const pct = total ? (c.raw / total * 100).toFixed(1) : 0;
+              const pct = total ? (c.raw / total * 100).toFixed(2) : 0;
               return ` ${c.label}: ${fmt(c.raw)} Tấn (${pct}%)`;
             }
           }
@@ -1724,13 +1735,13 @@ function renderOverviewTable() {
         <td class="num">${fmt(r.po_c)}</td>
         <td class="num">${fmt(r.po_a)}</td>
         <td class="num">${fmt(r.mpr)}</td>
-        <td class="num">${mprR.toFixed(1)}%</td>
+        <td class="num">${mprR.toFixed(2)}%</td>
         <td class="num">${fmt(r.pur)}</td>
-        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${fmt(r.arr)}</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
-        <td class="num">${balR.toFixed(1)}%</td>
+        <td class="num">${balR.toFixed(2)}%</td>
         <td>${statusPill(arrR)}</td>
       </tr>
     `);
@@ -1744,10 +1755,10 @@ function renderOverviewTable() {
     <tr class="total-row">
       <td colspan="2">TOTAL</td><td></td>
       <td class="num">${fmt(sum.po)}</td><td class="num">${fmt(sum.po_c)}</td><td class="num">${fmt(sum.po_a)}</td>
-      <td class="num">${fmt(sum.mpr)}</td><td class="num">${sMprR.toFixed(1)}%</td>
-      <td class="num">${fmt(sum.pur)}</td><td class="num">${sPurR.toFixed(1)}%</td>
-      <td class="num">${fmt(sum.arr)}</td><td class="num">${sArrR.toFixed(1)}%</td>
-      <td class="num">${fmt(sBal)}</td><td class="num">${sBalR.toFixed(1)}%</td>
+      <td class="num">${fmt(sum.mpr)}</td><td class="num">${sMprR.toFixed(2)}%</td>
+      <td class="num">${fmt(sum.pur)}</td><td class="num">${sPurR.toFixed(2)}%</td>
+      <td class="num">${fmt(sum.arr)}</td><td class="num">${sArrR.toFixed(2)}%</td>
+      <td class="num">${fmt(sBal)}</td><td class="num">${sBalR.toFixed(2)}%</td>
       <td></td>
     </tr>
   `);
@@ -1815,7 +1826,7 @@ function renderSupplierCharts(rows) {
           anchor: 'center', align: 'center',
           formatter: (v) => v > 0 ? v : ''
         },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} NCC (${p}%)`; } } }
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} NCC (${p}%)`; } } }
       },
       cutout: '58%'
     }
@@ -1887,7 +1898,7 @@ function renderSupplier() {
         <td class="num">${fmt(r.inv)}</td>
         <td class="num">${fmt(r.pur)}</td>
         <td class="num">${fmt(r.arr)}</td>
-        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
         <td>${statusPill(arrR)}</td>
@@ -1951,7 +1962,7 @@ function renderMPRCharts(rows) {
           anchor: 'center', align: 'center',
           formatter: (v) => v > 0 ? v : ''
         },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} MPR (${p}%)`; } } }
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} MPR (${p}%)`; } } }
       },
       cutout: '58%'
     }
@@ -2022,7 +2033,7 @@ function renderMPR() {
         <td class="num">${fmt(r.inv)}</td>
         <td class="num">${fmt(r.pur)}</td>
         <td class="num">${fmt(r.arr)}</td>
-        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
         <td>${statusPill(arrR)}</td>
@@ -2063,7 +2074,7 @@ function renderMatCharts(rows) {
           callbacks: {
             label: c => {
               const r = top[c.dataIndex];
-              const pct = r.mpr ? (r.arr / r.mpr * 100).toFixed(1) : 0;
+              const pct = r.mpr ? (r.arr / r.mpr * 100).toFixed(2) : 0;
               if (c.datasetIndex === 0) return ` Arrived: ${fmt(c.raw)} Tấn (${pct}%)`;
               return ` Balance: ${fmt(c.raw)} Tấn`;
             },
@@ -2147,13 +2158,13 @@ function renderMat() {
     </div>
     <div class="metric-card info-box info-success">
       <div class="metric-label">Tổng amount (VND)</div>
-      <div><span class="metric-value">${(totalVnd/1e9).toLocaleString('vi-VN', {maximumFractionDigits: 2})}</span><span class="metric-unit">tỷ VND</span></div>
+      <div><span class="metric-value">${(totalVnd/1e9).toLocaleString('vi-VN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><span class="metric-unit">tỷ VND</span></div>
       <div class="metric-sub">Purchased Domestic</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Loại vật tư nặng nhất</div>
       <div><span class="metric-value" style="font-size:18px">${heaviest ? heaviest.desc.substring(0,18) : '—'}</span></div>
-      <div class="metric-sub">${heaviest ? `${fmt(heaviest.mpr)} Tấn · ${heaviestPct.toFixed(0)}%` : ''}</div>
+      <div class="metric-sub">${heaviest ? `${fmt(heaviest.mpr)} Tấn · ${heaviestPct.toFixed(2)}%` : ''}</div>
     </div>
   `;
 
@@ -2253,7 +2264,7 @@ function renderPOCharts(rows) {
             return v > 0 ? v : '';
           }
         },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} PO (${p}%)`; } } }
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} PO (${p}%)`; } } }
       },
       cutout: '58%'
     }
@@ -2326,7 +2337,7 @@ function renderPO() {
         <td class="num">${fmt(r.inv)}</td>
         <td class="num">${fmt(r.pur)}</td>
         <td class="num">${fmt(r.arr)}</td>
-        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
         <td>${statusPill(arrR)}</td>
@@ -2422,7 +2433,7 @@ function renderLogistic() {
     </div>
     <div class="metric-card" style="border-left:4px solid var(--info);">
       <div class="metric-label" style="color:var(--info);">📊 Tỷ lệ đã về Amecc</div>
-      <div><span class="metric-value" style="color:var(--info)">${totalQty ? (atAmecc/totalQty*100).toFixed(1) : 0}</span><span class="metric-unit">%</span></div>
+      <div><span class="metric-value" style="color:var(--info)">${totalQty ? (atAmecc/totalQty*100).toFixed(2) : 0}</span><span class="metric-unit">%</span></div>
       <div class="metric-sub">${fmt1(atAmecc)} / ${fmt1(totalQty)} Tấn</div>
     </div>
   `;
@@ -2522,7 +2533,7 @@ function renderLogisticCharts(rows, agg) {
             return v > 0 ? fmtC(v) : '';
           }
         },
-        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt1(c.raw)} Tấn (${(c.raw/(bySea+byAir+byTruck)*100).toFixed(1)}%)` } }
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt1(c.raw)} Tấn (${(c.raw/(bySea+byAir+byTruck)*100).toFixed(2)}%)` } }
       },
       cutout:'58%'
     }
@@ -2634,7 +2645,7 @@ function renderLogisticCharts(rows, agg) {
           anchor: 'center', align: 'center',
           formatter: (v) => v > 0 ? v : ''
         },
-        tooltip:{ callbacks:{ label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} shipment (${p}%)`; } } }
+        tooltip:{ callbacks:{ label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} shipment (${p}%)`; } } }
       },
       scales:{r:{ticks:{font:{size:9}}, grid:{color:'#e2e8f0'}}}
     }
