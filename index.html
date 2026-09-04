@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AMECC — Báo cáo Vật tư</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -281,6 +282,66 @@
   }
   .callout::before { content: "👉"; }
 
+  /* HORIZONTAL BAR CONTAINER — bars scrollable, axis + legend là HTML tĩnh */
+  .hbar-container {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+  }
+  .hbar-body-wrap {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .hbar-inner {
+    position: relative;
+    min-height: 100%;
+  }
+  .hbar-body-wrap::-webkit-scrollbar { width: 8px; }
+  .hbar-body-wrap::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+  .hbar-body-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .hbar-body-wrap::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  /* Static HTML axis + legend */
+  .hbar-axis-wrap {
+    height: 32px;
+    position: relative;
+    flex-shrink: 0;
+    border-top: 1px solid #e5e7eb;
+  }
+  .hbar-axis-wrap.has-legend { height: 58px; }
+  .hbar-xaxis-row {
+    position: relative;
+    height: 26px;
+  }
+  .hbar-xaxis-tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #64748b;
+    text-align: center;
+    line-height: 1;
+  }
+  .hbar-xaxis-tick .tk-mark {
+    display: block;
+    width: 1px;
+    height: 4px;
+    background: #cbd5e1;
+    margin: 0 auto 3px;
+  }
+  .hbar-legend-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    padding: 4px 8px 0;
+    font-size: 12px;
+    color: #475569;
+  }
+  .hbar-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .hbar-legend-swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+
   /* Mock nav */
   .mock-nav { display: flex; gap: 4px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; }
   .mock-nav-item { padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
@@ -475,6 +536,33 @@
       <span class="filter-label">Đến ngày</span>
       <input type="date" class="filter-input" value="2026-08-19">
     </div>
+
+    <!-- Sub-slicers (chỉ hiện cái tương ứng với tab đang active) -->
+    <div class="filter-group sub-slicer" data-for="supplier">
+      <span class="filter-label">🏭 NCC</span>
+      <select class="filter-input" id="sup-slicer" style="min-width:220px;">
+        <option value="ALL">Tất cả NCC</option>
+      </select>
+    </div>
+    <div class="filter-group sub-slicer" data-for="mpr" style="display:none;">
+      <span class="filter-label">📄 MPR No.</span>
+      <select class="filter-input" id="mpr-slicer" style="min-width:260px;">
+        <option value="ALL">Tất cả MPR</option>
+      </select>
+    </div>
+    <div class="filter-group sub-slicer" data-for="mat" style="display:none;">
+      <span class="filter-label">🔩 Loại vật tư</span>
+      <select class="filter-input" id="mat-slicer" style="min-width:280px;">
+        <option value="ALL">Tất cả loại vật tư</option>
+      </select>
+    </div>
+    <div class="filter-group sub-slicer" data-for="po" style="display:none;">
+      <span class="filter-label">📋 PO No.</span>
+      <select class="filter-input" id="po-slicer" style="min-width:280px;">
+        <option value="ALL">Tất cả PO</option>
+      </select>
+    </div>
+
     <div class="filter-badge" id="st-filter-badge"></div>
   </div>
 
@@ -483,6 +571,7 @@
       <div class="sub-tab active" data-tab="supplier">🏭 Follow Supplier</div>
       <div class="sub-tab" data-tab="mpr">📄 Follow MPR</div>
       <div class="sub-tab" data-tab="mat">🔩 Follow Material Type</div>
+      <div class="sub-tab" data-tab="po">📋 Follow PO</div>
     </div>
 
     <!-- TAB SUPPLIER -->
@@ -498,7 +587,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div style="position:relative; height:260px;"><canvas id="chart-sup-top"></canvas></div>
+              <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-sup-top"></canvas></div></div><div class="hbar-axis-wrap" id="chart-sup-top-axis"></div></div>
             </div>
           </div>
           <div class="card" style="margin:0;">
@@ -543,7 +632,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div style="position:relative; height:260px;"><canvas id="chart-mpr-top"></canvas></div>
+              <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-mpr-top"></canvas></div></div><div class="hbar-axis-wrap" id="chart-mpr-top-axis"></div></div>
             </div>
           </div>
           <div class="card" style="margin:0;">
@@ -588,7 +677,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div style="position:relative; height:260px;"><canvas id="chart-mat-top"></canvas></div>
+              <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-mat-top"></canvas></div></div><div class="hbar-axis-wrap has-legend" id="chart-mat-top-axis"></div></div>
             </div>
           </div>
           <div class="card" style="margin:0;">
@@ -620,10 +709,53 @@
       </div>
     </div>
 
+    <!-- TAB PO -->
+    <div class="tab-panel" id="tab-po">
+      <div class="card-body">
+        <div class="metrics-grid" id="po-kpis" style="margin-bottom:16px;"></div>
+        <div class="grid-2-8-4" style="margin-bottom:16px;">
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Top PO theo Balance</div>
+                <div class="card-sub">PO nào còn thiếu nhiều nhất (Tấn)</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-po-top"></canvas></div></div><div class="hbar-axis-wrap" id="chart-po-top-axis"></div></div>
+            </div>
+          </div>
+          <div class="card" style="margin:0;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Phân bổ PO theo trạng thái</div>
+                <div class="card-sub">Số PO theo mức Arrived</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="position:relative; height:260px;"><canvas id="chart-po-status"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th><th>Dự án</th><th>PO No.</th><th>Nhà cung cấp</th>
+                <th class="num">PO Weight (T)</th><th class="num">MPR (T)</th><th class="num">Inv (T)</th>
+                <th class="num">Purchased (T)</th><th class="num">Arrived (T)</th>
+                <th class="num">% Purch</th><th class="num">% Arr</th>
+                <th class="num">Balance (T)</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-po"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
-
-<!-- =================== PAGE 3: USER GUIDE =================== -->
 <div class="page active" id="page-guide">
 
   <div class="page-header">
@@ -845,7 +977,7 @@
           </div>
         </div>
         <div class="card-body">
-          <div class="chart-wrap"><canvas id="chart-lg-supplier"></canvas></div>
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-lg-supplier"></canvas></div></div><div class="hbar-axis-wrap" id="chart-lg-supplier-axis"></div></div>
         </div>
       </div>
 
@@ -960,6 +1092,28 @@ const matData = [
 ];
 
 /* -----------------------------------------------------------------
+ * PO DATA — 1 record = 1 PO
+ * po_w = PO Weight (đã đặt); mpr = Weight MPR gộp; pur = Purchased; arr = Arrived; inv = Inventory
+ * ----------------------------------------------------------------- */
+const poData = [
+  { proj:'V314', po_no:'AMC-MAR/25060101', sup:'MARUBENI (MISP)', po_w: 285.5, mpr: 280.2, pur: 275.1, arr: 268.5, inv: 4.2 },
+  { proj:'V314', po_no:'AMC-NIP/25062502', sup:'NIPPON STEEL',    po_w: 190.3, mpr: 188.6, pur: 185.4, arr: 182.1, inv: 3.5 },
+  { proj:'V314', po_no:'AMC-JFE/25082019', sup:'JFE JAPAN',       po_w: 315.8, mpr: 310.4, pur: 285.6, arr: 120.5, inv: 8.2 },
+  { proj:'U285', po_no:'AMC-POS/25070103', sup:'POSCO VN',        po_w: 220.4, mpr: 218.1, pur: 215.5, arr: 210.3, inv: 5.5 },
+  { proj:'U285', po_no:'AMC-JFE/25071008', sup:'JFE JAPAN',       po_w: 175.2, mpr: 172.5, pur: 165.8, arr: 98.4,  inv: 2.8 },
+  { proj:'U285', po_no:'AMC-AGE/25081818', sup:'AGE STEEL',       po_w: 128.6, mpr: 125.4, pur: 98.5,  arr: 45.2,  inv: 1.5 },
+  { proj:'M304', po_no:'AMC-TIT/25071504', sup:'ĐẦU TƯ TITAN',    po_w: 95.4,  mpr: 93.2,  pur: 92.8,  arr: 90.6,  inv: 1.2 },
+  { proj:'M304', po_no:'AMC-KRS/25071809', sup:'KARL STORZ',      po_w: 145.8, mpr: 143.5, pur: 135.4, arr: 88.2,  inv: 3.5 },
+  { proj:'U315', po_no:'AMC-HYD/25080106', sup:'HYUNDAI STEEL',   po_w: 165.5, mpr: 162.8, pur: 158.4, arr: 155.6, inv: 2.5 },
+  { proj:'U315', po_no:'AMC-HYD/25072010', sup:'HYUNDAI STEEL',   po_w: 220.8, mpr: 218.4, pur: 208.5, arr: 105.3, inv: 6.2 },
+  { proj:'U319', po_no:'AMC-HP/25081014',  sup:'HÒA PHÁT',        po_w: 148.2, mpr: 145.5, pur: 140.8, arr: 82.4,  inv: 15.8 },
+  { proj:'E307', po_no:'AMC-BRB/25080515', sup:'BREMBANA&ROLLE',  po_w: 78.5,  mpr: 76.8,  pur: 74.2,  arr: 68.5,  inv: 2.1 },
+  { proj:'E307', po_no:'AMC-TVD/25073005', sup:'THÉP VIỆT ĐỨC',   po_w: 65.4,  mpr: 63.8,  pur: 63.5,  arr: 62.8,  inv: 0.5 },
+  { proj:'M270', po_no:'AMC-HP/25081513',  sup:'HÒA PHÁT',        po_w: 88.6,  mpr: 86.4,  pur: 82.5,  arr: 78.2,  inv: 2.8 },
+  { proj:'M270', po_no:'AMC-HIT/25082825', sup:'HITACHI',         po_w: 108.5, mpr: 105.6, pur: 95.4,  arr: 45.8,  inv: 8.5 },
+];
+
+/* -----------------------------------------------------------------
  * LOGISTIC DATA — 1 record = 1 shipment
  * status: 'PENDING' (chưa xuất) | 'ON_BOAT' | 'AT_PORT' | 'AT_AMECC'
  * transport: 'SEA' | 'AIR' | 'TRUCK'
@@ -1007,10 +1161,39 @@ const logisticData = [
 
 /* =============== GLOBAL STATE =============== */
 let currentProject = 'ALL';
+let currentSupplier = 'ALL';
+let currentMprNo    = 'ALL';
+let currentMatKey   = 'ALL';   // key = code|desc
+let currentPoNo     = 'ALL';
 
 /* =============== HELPERS =============== */
-const fmt  = (n) => n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
-const fmt1 = (n) => n.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+const fmt  = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 }));
+const fmt1 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 }));
+// Compact for chart labels — shorter format for tight spaces
+const fmtC = (n) => {
+  if (n == null || n === 0) return '';
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return (n/1e6).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + 'M';
+  if (abs >= 1e3) return (n/1e3).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + 'K';
+  return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+};
+
+/* =============== CHART DEFAULTS + DATALABELS =============== */
+if (typeof ChartDataLabels !== 'undefined') {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', {
+    color: '#1d273b',
+    font: { size: 12, weight: '700' },
+    formatter: (v) => {
+      if (v == null || v === 0 || Array.isArray(v)) return '';
+      return fmtC(v);
+    },
+    anchor: 'end',
+    align: 'end',
+    offset: 4,
+    clamp: true
+  });
+}
 
 function pbar(pct) {
   const w = Math.max(0, Math.min(100, pct));
@@ -1020,13 +1203,159 @@ function pbar(pct) {
   return `<div class="pbar"><div class="pbar-track"><div class="pbar-fill" style="width:${w}%; background:${color}"></div></div><span class="pbar-txt">${pct.toFixed(1)}%</span></div>`;
 }
 function statusPill(arrRatio) {
-  if (arrRatio >= 90) return `<span class="status-pill badge-success">Đủ</span>`;
+  if (arrRatio >= 98) return `<span class="status-pill badge-success">Đủ</span>`;
   if (arrRatio >= 50) return `<span class="status-pill badge-info">Đang nhập</span>`;
   if (arrRatio >= 20) return `<span class="status-pill badge-warning">Chú ý</span>`;
   return `<span class="status-pill badge-danger">Rủi ro</span>`;
 }
 function filterByProj(arr) {
   return currentProject === 'ALL' ? arr : arr.filter(r => r.proj === currentProject);
+}
+function filterSupplier() {
+  let r = filterByProj(supplierData);
+  if (currentSupplier !== 'ALL') r = r.filter(x => x.sup === currentSupplier);
+  return r;
+}
+function filterMPR() {
+  let r = filterByProj(mprData);
+  if (currentMprNo !== 'ALL') r = r.filter(x => x.mpr_no === currentMprNo);
+  return r;
+}
+function filterMat() {
+  let r = filterByProj(matData);
+  if (currentMatKey !== 'ALL') r = r.filter(x => `${x.code}|${x.desc}` === currentMatKey);
+  return r;
+}
+function filterPO() {
+  let r = filterByProj(poData);
+  if (currentPoNo !== 'ALL') r = r.filter(x => x.po_no === currentPoNo);
+  return r;
+}
+
+/* =============== POPULATE SUB-SLICERS =============== */
+function populateSubSlicers() {
+  // Supplier
+  const supRows = filterByProj(supplierData);
+  const supSel = document.getElementById('sup-slicer');
+  supSel.innerHTML = '<option value="ALL">Tất cả NCC</option>';
+  [...new Set(supRows.map(r => r.sup))].sort().forEach(s => {
+    supSel.insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`);
+  });
+  currentSupplier = 'ALL';
+
+  // MPR
+  const mprRows = filterByProj(mprData);
+  const mprSel = document.getElementById('mpr-slicer');
+  mprSel.innerHTML = '<option value="ALL">Tất cả MPR</option>';
+  [...new Set(mprRows.map(r => r.mpr_no))].sort().forEach(s => {
+    mprSel.insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`);
+  });
+  currentMprNo = 'ALL';
+
+  // Material Type
+  const matRows = filterByProj(matData);
+  const matSel = document.getElementById('mat-slicer');
+  matSel.innerHTML = '<option value="ALL">Tất cả loại vật tư</option>';
+  const seen = new Set();
+  matRows.forEach(r => {
+    const k = `${r.code}|${r.desc}`;
+    if (!seen.has(k)) { seen.add(k); matSel.insertAdjacentHTML('beforeend', `<option value="${k}">${r.code} — ${r.desc}</option>`); }
+  });
+  currentMatKey = 'ALL';
+
+  // PO
+  const poRows = filterByProj(poData);
+  const poSel = document.getElementById('po-slicer');
+  poSel.innerHTML = '<option value="ALL">Tất cả PO</option>';
+  poRows.forEach(r => {
+    poSel.insertAdjacentHTML('beforeend', `<option value="${r.po_no}">${r.po_no} — ${r.sup}</option>`);
+  });
+  currentPoNo = 'ALL';
+}
+
+/* Set dynamic height cho phần body của horizontal bar chart (chỉ bars, không có axis) */
+function setHBarHeight(canvasId, count) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const inner = c.parentElement;
+  if (!inner || !inner.classList.contains('hbar-inner')) return;
+  const h = Math.max(180, count * 50 + 16);   // 50px per bar
+  inner.style.height = h + 'px';
+}
+
+/* Y-axis width fixed cho body chart để align với axis chart */
+const HBAR_Y_WIDTH = 140;
+
+/* Render x-axis + legend làm HTML tĩnh (không dùng Chart.js) — hết wasted space */
+const HBAR_RIGHT_PAD = 20;  // matches body chart right padding + scrollbar allowance
+
+function niceStep(max, targetTicks) {
+  const rough = max / targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const niceNorms = [1, 2, 2.5, 5, 10];
+  return (niceNorms.find(n => n >= norm) || 10) * mag;
+}
+
+function renderHBarAxis(containerId, maxX, datasets, showLegend) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  // X-axis row
+  const step = niceStep(maxX, 5);
+  const ticks = [];
+  for (let v = 0; v <= maxX + step * 0.001; v += step) ticks.push(v);
+
+  const xRow = document.createElement('div');
+  xRow.className = 'hbar-xaxis-row';
+  ticks.forEach(v => {
+    const tick = document.createElement('div');
+    tick.className = 'hbar-xaxis-tick';
+    tick.style.left = `calc(${HBAR_Y_WIDTH}px + (100% - ${HBAR_Y_WIDTH + HBAR_RIGHT_PAD}px) * ${v / maxX})`;
+    tick.innerHTML = `<span class="tk-mark"></span>${fmt(v)}`;
+    xRow.appendChild(tick);
+  });
+  container.appendChild(xRow);
+
+  // Legend row (optional)
+  if (showLegend && datasets && datasets.length) {
+    const lg = document.createElement('div');
+    lg.className = 'hbar-legend-row';
+    datasets.forEach(ds => {
+      const item = document.createElement('span');
+      item.className = 'hbar-legend-item';
+      item.innerHTML = `<span class="hbar-legend-swatch" style="background:${ds.backgroundColor}"></span>${ds.label || ''}`;
+      lg.appendChild(item);
+    });
+    container.appendChild(lg);
+  }
+}
+
+/* Tính max value cho x-axis, làm tròn lên số đẹp để tick chia đều */
+function computeMaxX(datasets, stacked) {
+  if (!datasets.length) return 1;
+  let m = 0;
+  if (stacked) {
+    const n = datasets[0].data.length;
+    for (let i = 0; i < n; i++) {
+      const sum = datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0);
+      if (sum > m) m = sum;
+    }
+  } else {
+    datasets.forEach(ds => ds.data.forEach(v => { if (v > m) m = v; }));
+  }
+  return niceMax(m);
+}
+
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const buffered = v * 1.06;
+  const mag = Math.pow(10, Math.floor(Math.log10(buffered)));
+  const norm = buffered / mag;
+  const niceNorms = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+  const niceNorm = niceNorms.find(n => n >= norm) || 10;
+  return niceNorm * mag;
 }
 
 /* =============== POPULATE SLICERS =============== */
@@ -1036,10 +1365,24 @@ document.querySelectorAll('.proj-slicer').forEach(sel => {
   });
   sel.addEventListener('change', (e) => {
     currentProject = e.target.value;
-    // sync all slicers
     document.querySelectorAll('.proj-slicer').forEach(s => s.value = currentProject);
+    populateSubSlicers();
     refreshAll();
   });
+});
+
+/* Sub-slicer bindings (re-render tab riêng, không refreshAll) */
+document.getElementById('sup-slicer').addEventListener('change', (e) => {
+  currentSupplier = e.target.value; renderSupplier(); updateBadges();
+});
+document.getElementById('mpr-slicer').addEventListener('change', (e) => {
+  currentMprNo = e.target.value; renderMPR(); updateBadges();
+});
+document.getElementById('mat-slicer').addEventListener('change', (e) => {
+  currentMatKey = e.target.value; renderMat(); updateBadges();
+});
+document.getElementById('po-slicer').addEventListener('change', (e) => {
+  currentPoNo = e.target.value; renderPO(); updateBadges();
 });
 
 /* =============== OVERVIEW: KPIs =============== */
@@ -1075,7 +1418,7 @@ function renderOverviewKPIs() {
     <div class="metric-card">
       <div class="metric-label">KL đã về kho (Arrived)</div>
       <div><span class="metric-value">${fmt(t.arr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub"><span class="metric-badge ${arrR>=70?'badge-success':arrR>=40?'badge-warning':'badge-danger'}">${arrR.toFixed(1)}% / MPR</span></div>
+      <div class="metric-sub"><span class="metric-badge ${arrR>=98?'badge-success':arrR>=40?'badge-warning':'badge-danger'}">${arrR.toFixed(1)}% / MPR</span></div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Balance còn thiếu</div>
@@ -1214,6 +1557,7 @@ function renderWaterfall() {
       layout: { padding: { top: 28 } },
       plugins: {
         legend: { display: false },
+        datalabels: { display: false },
         tooltip: {
           callbacks: {
             label: (ctx) => {
@@ -1301,8 +1645,7 @@ const outsideLabelPlugin = {
 
       ctx.fillStyle = '#6c757d';
       ctx.font = '600 10px -apple-system, sans-serif';
-      const pct = (value / total * 100).toFixed(1);
-      ctx.fillText(`${label} · ${pct}%`, tx, ey + 7);
+      ctx.fillText(label, tx, ey + 7);
     });
     ctx.restore();
   }
@@ -1328,18 +1671,26 @@ function renderDonut() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { left: 60, right: 60, top: 20, bottom: 20 } },
+      layout: { padding: 10 },
       plugins: {
-        legend: { display: false },
+        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? fmtC(v) : ''
+        },
         tooltip: {
           callbacks: {
-            label: (c) => ` ${c.label}: ${fmt(c.raw)} Tấn`
+            label: (c) => {
+              const total = c.dataset.data.reduce((a,b)=>a+b, 0);
+              const pct = total ? (c.raw / total * 100).toFixed(1) : 0;
+              return ` ${c.label}: ${fmt(c.raw)} Tấn (${pct}%)`;
+            }
           }
         }
       },
       cutout: '58%'
-    },
-    plugins: [outsideLabelPlugin]
+    }
   });
 }
 
@@ -1414,16 +1765,15 @@ function renderSupplierCharts(rows) {
   })).filter(r => r.balance > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
 
   if (supTopChart) supTopChart.destroy();
+  setHBarHeight('chart-sup-top', Math.max(3, withBal.length));
+  const supTopDatasets = [{
+    label: 'Balance', data: withBal.map(r => r.balance),
+    backgroundColor: '#d63939', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85
+  }];
+  const supTopMax = computeMaxX(supTopDatasets, false);
   supTopChart = new Chart(document.getElementById('chart-sup-top'), {
     type: 'bar',
-    data: {
-      labels: withBal.map(r => r.sup),
-      datasets: [{
-        label: 'Balance',
-        data: withBal.map(r => r.balance),
-        backgroundColor: '#d63939', borderRadius: 4,
-      }]
-    },
+    data: { labels: withBal.map(r => r.sup), datasets: supTopDatasets },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -1431,18 +1781,19 @@ function renderSupplierCharts(rows) {
         tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} Tấn` } }
       },
       scales: {
-        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
-        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        x: { display: false, beginAtZero: true, max: supTopMax },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
       }
     }
   });
+  renderHBarAxis('chart-sup-top-axis', supTopMax, supTopDatasets, false);
 
   // Status buckets
   const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
   const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
   rows.forEach(r => {
     const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 90) buckets['Đủ']++;
+    if (arrR >= 98) buckets['Đủ']++;
     else if (arrR >= 50) buckets['Đang nhập']++;
     else if (arrR >= 20) buckets['Chú ý']++;
     else buckets['Rủi ro']++;
@@ -1458,8 +1809,13 @@ function renderSupplierCharts(rows) {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw} NCC` } }
+        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? v : ''
+        },
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} NCC (${p}%)`; } } }
       },
       cutout: '58%'
     }
@@ -1467,20 +1823,29 @@ function renderSupplierCharts(rows) {
 }
 
 function renderSupplier() {
-  const rows = filterByProj(supplierData);
+  const rows = filterSupplier();
   const tbody = document.getElementById('tbody-supplier');
   tbody.innerHTML = '';
 
   const uniqSup = new Set(rows.map(r => r.sup)).size;
   let done = 0, risk = 0, waiting = 0;
+  const totKL = rows.reduce((a, r) => ({
+    mpr: a.mpr + r.mpr, pur: a.pur + r.pur, arr: a.arr + r.arr, inv: a.inv + r.inv
+  }), { mpr:0, pur:0, arr:0, inv:0 });
+  const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
   rows.forEach(r => {
     const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 90) done++;
+    if (arrR >= 98) done++;
     else if (arrR < 30) { risk++; waiting++; }
     else if (arrR < 60) waiting++;
   });
 
   document.getElementById('sup-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL nhánh NCC</div>
+      <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+    </div>
     <div class="metric-card">
       <div class="metric-label">Số Nhà cung cấp</div>
       <div><span class="metric-value">${uniqSup}</span></div>
@@ -1494,7 +1859,7 @@ function renderSupplier() {
     <div class="metric-card">
       <div class="metric-label">NCC hoàn thành</div>
       <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
-      <div class="metric-sub">Ratio Arrived ≥ 90%</div>
+      <div class="metric-sub">Ratio Arrived ≥ 98%</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">NCC rủi ro cao</div>
@@ -1542,28 +1907,29 @@ function renderMPRCharts(rows) {
   })).filter(r => r.balance > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
 
   if (mprTopChart) mprTopChart.destroy();
+  setHBarHeight('chart-mpr-top', Math.max(3, withBal.length));
+  const mprTopDatasets = [{ label: 'Balance', data: withBal.map(r => r.balance), backgroundColor: '#d63939', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const mprTopMax = computeMaxX(mprTopDatasets, false);
   mprTopChart = new Chart(document.getElementById('chart-mpr-top'), {
     type: 'bar',
-    data: {
-      labels: withBal.map(r => r.mpr_no),
-      datasets: [{ label: 'Balance', data: withBal.map(r => r.balance), backgroundColor: '#d63939', borderRadius: 4 }]
-    },
+    data: { labels: withBal.map(r => r.mpr_no), datasets: mprTopDatasets },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} Tấn` } } },
       scales: {
-        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
-        y: { grid: { display: false }, ticks: { font: { size: 10, family: 'monospace' } } }
+        x: { display: false, beginAtZero: true, max: mprTopMax },
+        y: { grid: { display: false }, ticks: { font: { size: 12, family: 'monospace' } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
       }
     }
   });
+  renderHBarAxis('chart-mpr-top-axis', mprTopMax, mprTopDatasets, false);
 
   // Status buckets
   const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
   const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
   rows.forEach(r => {
     const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
-    if (arrR >= 90) buckets['Đủ']++;
+    if (arrR >= 98) buckets['Đủ']++;
     else if (arrR >= 50) buckets['Đang nhập']++;
     else if (arrR >= 20) buckets['Chú ý']++;
     else buckets['Rủi ro']++;
@@ -1579,8 +1945,13 @@ function renderMPRCharts(rows) {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw} MPR` } }
+        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? v : ''
+        },
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} MPR (${p}%)`; } } }
       },
       cutout: '58%'
     }
@@ -1588,19 +1959,28 @@ function renderMPRCharts(rows) {
 }
 
 function renderMPR() {
-  const rows = filterByProj(mprData);
+  const rows = filterMPR();
   const tbody = document.getElementById('tbody-mpr');
   tbody.innerHTML = '';
 
   let done = 0, processing = 0, notPur = 0;
+  const totKL = rows.reduce((a, r) => ({
+    mpr: a.mpr + r.mpr_w, pur: a.pur + r.pur, arr: a.arr + r.arr, inv: a.inv + r.inv
+  }), { mpr:0, pur:0, arr:0, inv:0 });
+  const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
   rows.forEach(r => {
     const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
-    if (arrR >= 90) done++;
+    if (arrR >= 98) done++;
     else if (arrR > 0) processing++;
     if (r.pur === 0) notPur++;
   });
 
   document.getElementById('mpr-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL nhánh MPR</div>
+      <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+    </div>
     <div class="metric-card">
       <div class="metric-label">Tổng số MPR</div>
       <div><span class="metric-value">${rows.length}</span></div>
@@ -1609,7 +1989,7 @@ function renderMPR() {
     <div class="metric-card">
       <div class="metric-label">MPR đã đủ hàng</div>
       <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
-      <div class="metric-sub">% Arr ≥ 90%</div>
+      <div class="metric-sub">% Arr ≥ 98%</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">MPR đang xử lý</div>
@@ -1656,40 +2036,51 @@ function renderMPR() {
 let matTopChart = null, matSourceChart = null;
 
 function renderMatCharts(rows) {
-  // Top 8 by MPR weight, showing MPR (grey) + Arrived (green) side-by-side
+  // Top 8 by MPR weight — KPI-fill style: Arrived (xanh, thực tế) + Balance (xám, còn thiếu) = MPR
   const top = [...rows].sort((a,b) => b.mpr - a.mpr).slice(0, 8);
 
   if (matTopChart) matTopChart.destroy();
+  setHBarHeight('chart-mat-top', Math.max(3, top.length));
+  const matTopDatasets = [
+    { label: 'Arrived (thực tế)',   data: top.map(r => r.arr),                       backgroundColor: '#2fb344', borderRadius: { topLeft: 3, bottomLeft: 3 }, stack: 'kpi', barPercentage: 0.9, categoryPercentage: 0.85 },
+    { label: 'Balance (còn thiếu)', data: top.map(r => Math.max(0, r.mpr - r.arr)),  backgroundColor: '#e2e8f0', borderRadius: { topRight: 3, bottomRight: 3 }, stack: 'kpi', barPercentage: 0.9, categoryPercentage: 0.85 },
+  ];
+  const matTopMax = computeMaxX(matTopDatasets, true);
   matTopChart = new Chart(document.getElementById('chart-mat-top'), {
     type: 'bar',
-    data: {
-      labels: top.map(r => r.code),
-      datasets: [
-        { label: 'MPR',     data: top.map(r => r.mpr), backgroundColor: '#94a3b8', borderRadius: 3 },
-        { label: 'Arrived', data: top.map(r => r.arr), backgroundColor: '#2fb344', borderRadius: 3 },
-      ]
-    },
+    data: { labels: top.map(r => r.code), datasets: matTopDatasets },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        legend: { display: false },
+        datalabels: {
+          color: (ctx) => ctx.datasetIndex === 0 ? '#fff' : '#475569',
+          font: { size: 12, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? fmtC(v) : ''
+        },
         tooltip: {
           callbacks: {
-            label: c => ` ${c.dataset.label}: ${fmt(c.raw)} Tấn`,
+            label: c => {
+              const r = top[c.dataIndex];
+              const pct = r.mpr ? (r.arr / r.mpr * 100).toFixed(1) : 0;
+              if (c.datasetIndex === 0) return ` Arrived: ${fmt(c.raw)} Tấn (${pct}%)`;
+              return ` Balance: ${fmt(c.raw)} Tấn`;
+            },
             afterBody: (items) => {
-              if (items.length < 2) return '';
               const idx = items[0].dataIndex;
-              return `\n${top[idx].desc}`;
+              return `\nMPR: ${fmt(top[idx].mpr)} Tấn\n${top[idx].desc}`;
             }
           }
         }
       },
       scales: {
-        x: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#f1f5f9' } },
-        y: { grid: { display: false }, ticks: { font: { size: 10, family: 'monospace' } } }
+        x: { display: false, stacked: true, beginAtZero: true, max: matTopMax },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 12, family: 'monospace' } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
       }
     }
   });
+  renderHBarAxis('chart-mat-top-axis', matTopMax, matTopDatasets, true);
 
   // Import (has usd) vs Domestic (has vnd) by weight
   const impRows = rows.filter(r => r.usd > 0);
@@ -1710,6 +2101,15 @@ function renderMatCharts(rows) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        datalabels: {
+          color: '#fff',
+          font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v, ctx) => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            return v > 0 ? fmtC(v) : '';
+          }
+        },
         tooltip: {
           callbacks: {
             label: c => ` ${c.label}: ${fmt(c.raw)} Tấn`,
@@ -1723,7 +2123,7 @@ function renderMatCharts(rows) {
 }
 
 function renderMat() {
-  const rows = filterByProj(matData);
+  const rows = filterMat();
   const tbody = document.getElementById('tbody-mat');
   tbody.innerHTML = '';
 
@@ -1731,21 +2131,23 @@ function renderMat() {
   const totalVnd = rows.reduce((s, r) => s + r.vnd, 0);
   const heaviest = rows.reduce((m, r) => (!m || r.mpr > m.mpr) ? r : m, null);
   const heaviestPct = heaviest && rows.length ? (heaviest.mpr / rows.reduce((s,r)=>s+r.mpr,0) * 100) : 0;
+  const totKL = rows.reduce((a, r) => ({ mpr: a.mpr + r.mpr, arr: a.arr + r.arr }), { mpr:0, arr:0 });
+  const totBal = Math.max(0, totKL.mpr - totKL.arr);
 
   document.getElementById('mat-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL nhánh Vật tư</div>
+      <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+    </div>
     <div class="metric-card">
       <div class="metric-label">Số nhóm vật tư</div>
       <div><span class="metric-value">${rows.length}</span></div>
       <div class="metric-sub">Theo Code + Description</div>
     </div>
-    <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng amount (USD)</div>
-      <div><span class="metric-value">${(totalUsd/1e6).toFixed(2)}</span><span class="metric-unit">M USD</span></div>
-      <div class="metric-sub">Purchased Import</div>
-    </div>
     <div class="metric-card info-box info-success">
       <div class="metric-label">Tổng amount (VND)</div>
-      <div><span class="metric-value">${(totalVnd/1e9).toFixed(1)}</span><span class="metric-unit">tỷ VND</span></div>
+      <div><span class="metric-value">${(totalVnd/1e9).toLocaleString('vi-VN', {maximumFractionDigits: 2})}</span><span class="metric-unit">tỷ VND</span></div>
       <div class="metric-sub">Purchased Domestic</div>
     </div>
     <div class="metric-card">
@@ -1783,6 +2185,155 @@ function renderMat() {
     `);
   });
   renderMatCharts(rows);
+}
+
+/* =============== MATERIAL STATUS: PO =============== */
+let poTopChart = null, poStatusChart = null;
+
+function renderPOCharts(rows) {
+  // Top 8 by Balance
+  const withBal = rows.map(r => ({
+    label: `${r.po_no.slice(-10)}·${r.sup.substring(0,10)}`,
+    balance: Math.max(0, r.mpr - r.arr - r.inv)
+  })).filter(r => r.balance > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
+
+  if (poTopChart) poTopChart.destroy();
+  setHBarHeight('chart-po-top', Math.max(3, withBal.length));
+  const poTopDatasets = [{ label: 'Balance', data: withBal.map(r => r.balance), backgroundColor: '#d63939', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const poTopMax = computeMaxX(poTopDatasets, false);
+  poTopChart = new Chart(document.getElementById('chart-po-top'), {
+    type: 'bar',
+    data: { labels: withBal.map(r => r.label), datasets: poTopDatasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          color: '#1d273b', font: { size: 12, weight: '700' },
+          anchor: 'end', align: 'right', offset: 4,
+          formatter: v => fmtC(v)
+        },
+        tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} Tấn` } }
+      },
+      scales: {
+        x: { display: false, beginAtZero: true, max: poTopMax },
+        y: { grid: { display: false }, ticks: { font: { size: 12, family: 'monospace' } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
+      }
+    }
+  });
+  renderHBarAxis('chart-po-top-axis', poTopMax, poTopDatasets, false);
+
+  // Status buckets
+  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
+  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
+  rows.forEach(r => {
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    if (arrR >= 98) buckets['Đủ']++;
+    else if (arrR >= 50) buckets['Đang nhập']++;
+    else if (arrR >= 20) buckets['Chú ý']++;
+    else buckets['Rủi ro']++;
+  });
+
+  if (poStatusChart) poStatusChart.destroy();
+  poStatusChart = new Chart(document.getElementById('chart-po-status'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v, ctx) => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            return v > 0 ? v : '';
+          }
+        },
+        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} PO (${p}%)`; } } }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
+function renderPO() {
+  const rows = filterPO();
+  const tbody = document.getElementById('tbody-po');
+  tbody.innerHTML = '';
+
+  const totKL = rows.reduce((a, r) => ({
+    po_w: a.po_w + r.po_w, mpr: a.mpr + r.mpr, pur: a.pur + r.pur, arr: a.arr + r.arr, inv: a.inv + r.inv
+  }), { po_w:0, mpr:0, pur:0, arr:0, inv:0 });
+  const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
+
+  let done = 0, processing = 0, notArr = 0;
+  rows.forEach(r => {
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    if (arrR >= 98) done++;
+    else if (arrR > 0) processing++;
+    if (r.arr === 0) notArr++;
+  });
+
+  document.getElementById('po-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng KL nhánh PO</div>
+      <div><span class="metric-value">${fmt(totKL.po_w)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">PO Weight · MPR ${fmt(totKL.mpr)} · Arrived ${fmt(totKL.arr)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tổng số PO</div>
+      <div><span class="metric-value">${rows.length}</span></div>
+      <div class="metric-sub">PO đang tracking</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">PO hoàn thành</div>
+      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
+      <div class="metric-sub">% Arr ≥ 98%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">PO đang xử lý</div>
+      <div><span class="metric-value" style="color:var(--warning)">${processing}</span></div>
+      <div class="metric-sub">Partial arrival</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">PO chưa nhập hàng</div>
+      <div><span class="metric-value" style="color:var(--danger)">${notArr}</span></div>
+      <div class="metric-sub">Arrived = 0</div>
+    </div>
+  `;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Không có dữ liệu.</td></tr>`;
+    renderPOCharts(rows);
+    return;
+  }
+  rows.forEach((r, i) => {
+    const purR = r.mpr ? ((r.pur + r.inv) / r.mpr * 100) : 0;
+    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
+    const bal = Math.max(0, r.mpr - r.arr - r.inv);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${i+1}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.po_no}</td>
+        <td class="cell-muted">${r.sup}</td>
+        <td class="num">${fmt(r.po_w)}</td>
+        <td class="num">${fmt(r.mpr)}</td>
+        <td class="num">${fmt(r.inv)}</td>
+        <td class="num">${fmt(r.pur)}</td>
+        <td class="num">${fmt(r.arr)}</td>
+        <td class="num">${purR.toFixed(1)}%</td>
+        <td class="num">${pbar(arrR)}</td>
+        <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
+        <td>${statusPill(arrR)}</td>
+      </tr>
+    `);
+  });
+  renderPOCharts(rows);
 }
 
 /* =============== LOGISTIC =============== */
@@ -1904,6 +2455,7 @@ function renderLogisticCharts(rows, agg) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
+        datalabels: { display: false },
         tooltip: {
           callbacks: {
             label: c => {
@@ -1962,6 +2514,14 @@ function renderLogisticCharts(rows, agg) {
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => {
+            const total = bySea + byAir + byTruck;
+            return v > 0 ? fmtC(v) : '';
+          }
+        },
         tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt1(c.raw)} Tấn (${(c.raw/(bySea+byAir+byTruck)*100).toFixed(1)}%)` } }
       },
       cutout:'58%'
@@ -2003,6 +2563,12 @@ function renderLogisticCharts(rows, agg) {
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'top', labels:{font:{size:11}, boxWidth:12, padding:8}},
+        datalabels: {
+          color: '#1d273b', font: { size: 11, weight: '700' },
+          anchor: 'end', align: 'end', offset: 2,
+          formatter: (v) => (v == null || v === 0) ? '' : fmtC(v),
+          display: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 5  // hide small values in dense chart
+        },
         tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn` } }
       },
       scales:{
@@ -2019,21 +2585,30 @@ function renderLogisticCharts(rows, agg) {
   });
   const supTop = Object.entries(supMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
   if (lgSupChart) lgSupChart.destroy();
+  setHBarHeight('chart-lg-supplier', Math.max(3, supTop.length));
+  const lgSupDatasets = [{ label: 'KL', data: supTop.map(s => s[1]), backgroundColor:'#0054a6', borderRadius:3, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const lgSupMax = computeMaxX(lgSupDatasets, false);
   lgSupChart = new Chart(document.getElementById('chart-lg-supplier'), {
     type:'bar',
-    data:{
-      labels: supTop.map(s => s[0]),
-      datasets:[{ data: supTop.map(s => s[1]), backgroundColor:'#0054a6', borderRadius:3 }]
-    },
+    data:{ labels: supTop.map(s => s[0]), datasets: lgSupDatasets },
     options:{
       indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label: c => ` ${fmt1(c.raw)} Tấn`}} },
+      plugins:{
+        legend:{display:false},
+        datalabels: {
+          color: '#1d273b', font: { size: 12, weight: '700' },
+          anchor: 'end', align: 'right', offset: 4,
+          formatter: (v) => fmtC(v)
+        },
+        tooltip:{callbacks:{label: c => ` ${fmt1(c.raw)} Tấn`}}
+      },
       scales:{
-        x:{beginAtZero:true, ticks:{callback:v=>fmt(v), font:{size:10}}, grid:{color:'#f1f5f9'}},
-        y:{grid:{display:false}, ticks:{font:{size:10}}}
+        x:{display:false, beginAtZero:true, max: lgSupMax},
+        y:{grid:{display:false}, ticks:{font:{size:12}}, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; }}
       }
     }
   });
+  renderHBarAxis('chart-lg-supplier-axis', lgSupMax, lgSupDatasets, false);
 
   // ===== CHART 5: Status distribution =====
   if (lgStatusChart) lgStatusChart.destroy();
@@ -2054,7 +2629,12 @@ function renderLogisticCharts(rows, agg) {
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
-        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw} shipment` } }
+        datalabels: {
+          color: '#fff', font: { size: 14, weight: '700' },
+          anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? v : ''
+        },
+        tooltip:{ callbacks:{ label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(1):0; return ` ${c.label}: ${c.raw} shipment (${p}%)`; } } }
       },
       scales:{r:{ticks:{font:{size:9}}, grid:{color:'#e2e8f0'}}}
     }
@@ -2131,7 +2711,25 @@ function updateBadges() {
     ? `<span class="filter-chip">Tất cả dự án</span>`
     : `<span class="filter-chip">🎯 ${currentProject}</span>`;
   document.getElementById('ov-filter-badge').innerHTML = `Đang xem: ${chip}`;
-  document.getElementById('st-filter-badge').innerHTML = `Đang xem: ${chip}`;
+
+  // Material Status badge — include active sub-slicer chip
+  const activeTab = document.querySelector('.sub-tab.active')?.dataset.tab || 'supplier';
+  let subChip = '', count = 0;
+  if (activeTab === 'supplier') {
+    count = filterSupplier().length;
+    if (currentSupplier !== 'ALL') subChip = `<span class="filter-chip">🏭 ${currentSupplier}</span>`;
+  } else if (activeTab === 'mpr') {
+    count = filterMPR().length;
+    if (currentMprNo !== 'ALL') subChip = `<span class="filter-chip">📄 ${currentMprNo}</span>`;
+  } else if (activeTab === 'mat') {
+    count = filterMat().length;
+    if (currentMatKey !== 'ALL') subChip = `<span class="filter-chip">🔩 ${currentMatKey.split('|')[0]}</span>`;
+  } else if (activeTab === 'po') {
+    count = filterPO().length;
+    if (currentPoNo !== 'ALL') subChip = `<span class="filter-chip">📋 ${currentPoNo.substring(0,20)}${currentPoNo.length>20?'…':''}</span>`;
+  }
+  document.getElementById('st-filter-badge').innerHTML = `Đang xem: ${chip} ${subChip} <b>${count}</b> dòng`;
+
   const lgChip = lgTransport === 'ALL' ? '' : `<span class="filter-chip">${lgTransport}</span>`;
   document.getElementById('lg-filter-badge').innerHTML = `Đang xem: ${chip} ${lgChip}`;
 }
@@ -2146,6 +2744,7 @@ function refreshAll() {
   renderSupplier();
   renderMPR();
   renderMat();
+  renderPO();
   renderLogistic();
 }
 
@@ -2183,10 +2782,16 @@ document.querySelectorAll('.sub-tab').forEach(el => {
     const target = el.dataset.tab;
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('tab-' + target).classList.add('active');
+    // Show only the sub-slicer of active tab
+    document.querySelectorAll('.sub-slicer').forEach(g => {
+      g.style.display = (g.dataset.for === target) ? 'flex' : 'none';
+    });
+    updateBadges();
   });
 });
 
 /* Initial render */
+populateSubSlicers();
 refreshAll();
 </script>
 </body>
