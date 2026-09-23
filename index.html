@@ -193,6 +193,21 @@
   .page.active { display: block; }
 
   .chart-wrap { position: relative; height: 340px; }
+  .section-head {
+    display: flex; align-items: center; gap: 10px;
+    margin: 26px 0 14px; padding-bottom: 10px; border-bottom: 2px solid var(--primary);
+    font-size: 15px; font-weight: 700; color: var(--primary); letter-spacing: .3px; text-transform: uppercase;
+  }
+  .section-head:first-child { margin-top: 0; }
+  .section-head .sh-desc { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; margin-left: auto; }
+  .tbl-toggle { display: flex; gap: 6px; }
+  .tbl-toggle button {
+    border: 1px solid #d7dde5; background: #fff; color: var(--muted);
+    padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .tbl-toggle button:hover { border-color: var(--primary); color: var(--primary); }
+  .tbl-toggle button.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
   .status-pill {
     font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
@@ -683,12 +698,13 @@
           <div class="card" style="margin:0;">
             <div class="card-header">
               <div>
-                <div class="card-title">Cơ cấu nguồn cung</div>
-                <div class="card-sub">Import (USD) vs Domestic (VND) theo KL</div>
+                <div class="card-title">Phân bổ trạng thái</div>
+                <div class="card-sub">Số nhóm vật tư theo Đủ / Đang nhập / Rủi ro</div>
               </div>
             </div>
             <div class="card-body">
-              <div style="position:relative; height:260px;"><canvas id="chart-mat-source"></canvas></div>
+              <div style="position:relative; height:220px;"><canvas id="chart-mat-status"></canvas></div>
+              <div id="mat-source-note" style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:12px; color:var(--muted);"></div>
             </div>
           </div>
         </div>
@@ -700,7 +716,7 @@
                 <th class="num">Design (T)</th><th class="num">MPR (T)</th>
                 <th class="num">Purchased (T)</th><th class="num">Arrived (T)</th>
                 <th class="num">% Arr</th><th class="num">Balance (T)</th>
-                <th class="num">Amount USD</th><th class="num">Amount VND</th>
+                <th class="num">Amount USD</th><th class="num">Amount VND</th><th>Trạng thái</th>
               </tr>
             </thead>
             <tbody id="tbody-mat"></tbody>
@@ -864,12 +880,23 @@
         <div class="step-badge">5</div>
         <h2>Tab con trong trang Material Status</h2>
       </div>
-      <p>Trong trang <b>Material Status</b> có 3 tab con — mỗi tab là 1 góc nhìn khác nhau về cùng một tập dữ liệu:</p>
+      <p>Trong trang <b>Material Status</b> có 4 tab con — mỗi tab là 1 góc nhìn khác nhau về cùng một tập dữ liệu:</p>
       <ul>
         <li><b>🏭 Follow Supplier</b> — Nhóm theo nhà cung cấp. Trả lời: "NCC nào đang nợ hàng nhiều nhất?"</li>
         <li><b>📄 Follow MPR</b> — Nhóm theo số MPR. Trả lời: "MPR nào đang xử lý dở, MPR nào còn chưa mua?"</li>
         <li><b>🔩 Follow Material Type</b> — Nhóm theo loại vật tư (Code + Description). Trả lời: "Chi bao nhiêu cho từng loại vật tư (USD/VND)?"</li>
+        <li><b>📋 Follow PO</b> — Nhóm theo từng PO. Trả lời: "PO nào còn thiếu hàng nhiều nhất?"</li>
       </ul>
+
+      <p><b>Quy tắc trạng thái (áp dụng chung cho cả 4 tab):</b></p>
+      <ul>
+        <li><span class="status-pill badge-success">Đủ</span> — % Arrived (gồm Inventory) ≥ <b>98%</b> so với MPR.</li>
+        <li><span class="status-pill badge-danger">Rủi ro</span> — chưa đạt 98% <b>và</b> ETA Update gần nhất chỉ còn <b>dưới 15 ngày</b> (kể cả đã quá hạn).</li>
+        <li><span class="status-pill badge-info">Đang nhập</span> — các trường hợp còn lại.</li>
+      </ul>
+      <p class="note">ETA Update dùng để so sánh là <b>ngày gần nhất</b> trong các dòng chưa đủ hàng của NCC / MPR / loại vật tư / PO đó.</p>
+
+      <p><b>Trang Logistic</b> gồm 2 phần: <b>📥 Nhập NVL</b> (lịch về Amecc, tổng nhập theo NCC, NCC giao chậm so với Plan ETA Update) và <b>📤 Xuất NVL</b> (sản lượng theo tháng, trạng thái theo dự án, cơ cấu nguyên vật liệu, phân bổ trạng thái — lô "Muộn" = đã quá ETA mà chưa hoàn tất). Bảng chi tiết cuối trang có nút chuyển giữa <b>Chi tiết nhập</b> và <b>Chi tiết xuất</b>.</p>
 
       <div class="mock">
         <span class="mock-label">Sub-tabs bên trong Material Status</span>
@@ -892,7 +919,7 @@
   <div class="page-header">
     <div class="page-eyebrow">TRANG 4 — VẬN CHUYỂN VÀ THÔNG QUAN</div>
     <div class="page-title">Logistic</div>
-    <div class="page-desc">Trạng thái vận chuyển của các shipment — đang trên biển, tồn ở port, đã về Amecc. Cảnh báo hàng quá hạn storage và hàng sắp cần dispatch.</div>
+    <div class="page-desc">Hai phần: <b>Nhập NVL</b> (shipment về Amecc — cảnh báo quá hạn storage, hàng sắp về, NCC giao chậm) và <b>Xuất NVL</b> (xuất khẩu thành phẩm — sản lượng, cảng đích, tiến độ chứng từ).</div>
   </div>
 
   <div class="filter-bar">
@@ -916,45 +943,15 @@
 
   <div class="content">
 
-    <!-- KPI ROW 1: các trạng thái pipeline -->
+    <div class="section-head">📥 Nhập NVL <span class="sh-desc">Shipment từ NCC về kho Amecc</span></div>
+
+    <!-- KPI ROW 1 -->
     <div class="metrics-grid" id="lg-kpis-pipeline"></div>
 
     <!-- KPI ROW 2: cảnh báo -->
     <div class="metrics-grid" id="lg-kpis-alert"></div>
 
-    <!-- Chart Row 1: Waterfall pipeline + Doughnut transport -->
-    <div class="grid-2-8-4">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Pipeline vận chuyển — Waterfall</div>
-            <div class="card-sub">Total → On Boat → At Port → At Amecc (Tấn)</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="chart-wrap"><canvas id="chart-lg-pipeline"></canvas></div>
-          <div class="wf-legend">
-            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--blue)"></span> TOTAL</div>
-            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--orange)"></span> DECREASE</div>
-            <div class="wf-legend-item"><span class="wf-legend-swatch" style="background:var(--success)"></span> ARRIVED</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Phân bổ theo loại vận tải</div>
-            <div class="card-sub">Tỷ trọng KL đang tracking</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="chart-wrap"><canvas id="chart-lg-transport"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chart Row 2: Timeline 30 days arrival -->
+    <!-- Chart: Timeline 30 days arrival -->
     <div class="card" style="margin-top:20px;">
       <div class="card-header">
         <div>
@@ -967,43 +964,104 @@
       </div>
     </div>
 
-    <!-- Chart Row 3: Top supplier in-transit + Status distribution -->
-    <div class="grid-2-8-4" style="margin-top:20px;">
-      <div class="card">
+    <!-- Chart: Tổng nhập theo NCC + NCC giao chậm -->
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Top NCC đang có hàng vận chuyển</div>
-            <div class="card-sub">KL chưa arrival Amecc — sắp xếp giảm dần</div>
+            <div class="card-title">Tổng Nhập theo NCC</div>
+            <div class="card-sub">KL đã về Amecc (xanh) vs đang trên đường/chờ xuất (xám) — Tấn</div>
           </div>
         </div>
         <div class="card-body">
-          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-lg-supplier"></canvas></div></div><div class="hbar-axis-wrap" id="chart-lg-supplier-axis"></div></div>
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-lg-supplier"></canvas></div></div><div class="hbar-axis-wrap has-legend" id="chart-lg-supplier-axis"></div></div>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Phân bố trạng thái</div>
-            <div class="card-sub">Số shipment theo giai đoạn</div>
+            <div class="card-title">NCC có tỷ lệ giao chậm cao</div>
+            <div class="card-sub">% lô trễ so với <b>Plan ETA Update</b> — đã về muộn hoặc quá hạn mà chưa về</div>
           </div>
         </div>
         <div class="card-body">
-          <div class="chart-wrap"><canvas id="chart-lg-status"></canvas></div>
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-lg-delay"></canvas></div></div><div class="hbar-axis-wrap" id="chart-lg-delay-axis"></div></div>
         </div>
       </div>
     </div>
 
-    <!-- Table: shipment cần chú ý -->
+    <!-- ===================== PHẦN XUẤT NVL ===================== -->
+    <div class="section-head">📤 Xuất NVL <span class="sh-desc">Xuất khẩu thành phẩm — sản lượng, cảng đích, chứng từ</span></div>
+
+    <div class="metrics-grid" id="ex-kpis"></div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Sản lượng xuất theo tháng</div>
+            <div class="card-sub">Cột = số container (CTR) · Đường = số lô xuất — theo ETD</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:300px;"><canvas id="chart-ex-month"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Trạng thái theo dự án</div>
+            <div class="card-sub">Số lô theo Hoàn tất / Đang thực hiện / Muộn — muộn = quá ETA mà chưa hoàn tất</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-ex-proj"></canvas></div></div><div class="hbar-axis-wrap has-legend" id="chart-ex-proj-axis"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2-8-4" style="margin-top:20px;">
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cơ cấu nguyên vật liệu xuất</div>
+            <div class="card-sub">Số lô theo mặt hàng (Item of goods) — tooltip kèm container &amp; khối lượng</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-ex-item"></canvas></div></div><div class="hbar-axis-wrap" id="chart-ex-item-axis"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Phân bổ trạng thái xuất</div>
+            <div class="card-sub">Đánh giá muộn dựa trên ETA</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="position:relative; height:300px;"><canvas id="chart-ex-status"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== BẢNG CHI TIẾT ===================== -->
     <div class="card" style="margin-top:20px;">
       <div class="card-header">
         <div>
-          <div class="card-title">🚨 Shipment cần chú ý (Top 15)</div>
-          <div class="card-sub">Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)</div>
+          <div class="card-title" id="lg-tbl-title">🚨 Chi tiết Nhập — Shipment cần chú ý (Top 15)</div>
+          <div class="card-sub" id="lg-tbl-sub">Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)</div>
+        </div>
+        <div class="tbl-toggle">
+          <button class="active" data-tbl="in">📥 Chi tiết nhập</button>
+          <button data-tbl="out">📤 Chi tiết xuất</button>
         </div>
       </div>
       <div class="card-body no-pad">
-        <div class="table-wrap">
+        <div class="table-wrap" id="tblwrap-in">
           <table class="dashboard-table">
             <thead>
               <tr>
@@ -1017,12 +1075,39 @@
                 <th>ETD</th>
                 <th>ETA Port</th>
                 <th>Storage due</th>
-                <th>Plan Arrival</th>
+                <th>Plan ETA Update</th>
                 <th>Trạng thái</th>
                 <th class="num">Ngày còn</th>
               </tr>
             </thead>
             <tbody id="tbody-lg-alert"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap" id="tblwrap-out" style="display:none;">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dự án</th>
+                <th>Loại</th>
+                <th>Mặt hàng</th>
+                <th>Mode</th>
+                <th>CTR</th>
+                <th class="num">Q'ty CTR</th>
+                <th class="num">GW (kg)</th>
+                <th>Vessel</th>
+                <th>Carrier</th>
+                <th>Bill No.</th>
+                <th>POL</th>
+                <th>POD</th>
+                <th>ETD</th>
+                <th>ETA</th>
+                <th>Tờ khai</th>
+                <th>C/O</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ex-detail"></tbody>
           </table>
         </div>
       </div>
@@ -1053,42 +1138,43 @@ const overviewData = [
 ];
 
 const supplierData = [
-  { proj: 'U285', sup: 'AGE STEEL',        des: 258,  mpr: 258,  inv: 0,  pur: 0,    arr: 0 },
-  { proj: 'U285', sup: 'POSCO VN',         des: 450,  mpr: 450,  inv: 15, pur: 439,  arr: 128 },
-  { proj: 'U285', sup: 'JFE JAPAN',        des: 599,  mpr: 599,  inv: 0,  pur: 539,  arr: 320 },
-  { proj: 'U315', sup: 'HYUNDAI STEEL',    des: 470,  mpr: 470,  inv: 8,  pur: 420,  arr: 285 },
-  { proj: 'V314', sup: 'MARUBENI (MISP)',  des: 1131, mpr: 1131, inv: 0,  pur: 1131, arr: 0 },
-  { proj: 'V314', sup: 'NIPPON STEEL',     des: 540,  mpr: 540,  inv: 12, pur: 462,  arr: 382 },
-  { proj: 'M304', sup: 'ĐẦU TƯ TITAN',     des: 340,  mpr: 340,  inv: 5,  pur: 285,  arr: 178 },
-  { proj: 'M304', sup: 'KARL STORZ',       des: 420,  mpr: 420,  inv: 0,  pur: 380,  arr: 240 },
-  { proj: 'E307', sup: 'THÉP VIỆT ĐỨC',    des: 148,  mpr: 148,  inv: 0,  pur: 141,  arr: 143 },
-  { proj: 'U319', sup: 'HÒA PHÁT',         des: 380,  mpr: 380,  inv: 22, pur: 320,  arr: 195 },
+  // eta = "ETA Update" GẦN NHẤT (MIN) của các item chưa đủ hàng thuộc NCC đó → BigQuery: MIN(eta_update) WHERE ratio < 98%
+  { proj: 'U285', sup: 'AGE STEEL',        des: 258,  mpr: 258,  inv: 0,  pur: 0,    arr: 0,   eta: '2026-09-05' },
+  { proj: 'U285', sup: 'POSCO VN',         des: 450,  mpr: 450,  inv: 15, pur: 439,  arr: 128, eta: '2026-10-20' },
+  { proj: 'U285', sup: 'JFE JAPAN',        des: 599,  mpr: 599,  inv: 0,  pur: 539,  arr: 320, eta: '2026-09-08' },
+  { proj: 'U315', sup: 'HYUNDAI STEEL',    des: 470,  mpr: 470,  inv: 8,  pur: 420,  arr: 285, eta: '2026-11-15' },
+  { proj: 'V314', sup: 'MARUBENI (MISP)',  des: 1131, mpr: 1131, inv: 0,  pur: 1131, arr: 0,   eta: '2026-12-10' },
+  { proj: 'V314', sup: 'NIPPON STEEL',     des: 540,  mpr: 540,  inv: 12, pur: 462,  arr: 382, eta: '2026-09-03' },
+  { proj: 'M304', sup: 'ĐẦU TƯ TITAN',     des: 340,  mpr: 340,  inv: 5,  pur: 285,  arr: 178, eta: '2026-10-05' },
+  { proj: 'M304', sup: 'KARL STORZ',       des: 420,  mpr: 420,  inv: 0,  pur: 380,  arr: 240, eta: '2026-09-30' },
+  { proj: 'E307', sup: 'THÉP VIỆT ĐỨC',    des: 148,  mpr: 148,  inv: 2,  pur: 148,  arr: 146, eta: null },
+  { proj: 'U319', sup: 'HÒA PHÁT',         des: 380,  mpr: 380,  inv: 22, pur: 320,  arr: 195, eta: '2026-09-10' },
 ];
 
 const mprData = [
-  { proj: 'U285', mpr_no: 'DCC26-U285-0001-VTC', des: 152, mpr_w: 152, inv: 3,  pur: 148, arr: 95 },
-  { proj: 'U285', mpr_no: 'DCC26-U285-0002-VTC', des: 88,  mpr_w: 88,  inv: 0,  pur: 88,  arr: 88 },
-  { proj: 'U285', mpr_no: 'DCC26-U285-0003-VTC', des: 210, mpr_w: 210, inv: 12, pur: 198, arr: 120 },
-  { proj: 'V314', mpr_no: 'DCC26-V314-0001-VTC', des: 480, mpr_w: 480, inv: 0,  pur: 0,   arr: 0 },
-  { proj: 'V314', mpr_no: 'DCC26-V314-0002-VTC', des: 320, mpr_w: 320, inv: 5,  pur: 315, arr: 180 },
-  { proj: 'M304', mpr_no: 'DCC26-M304-0001-VTC', des: 195, mpr_w: 195, inv: 0,  pur: 182, arr: 145 },
-  { proj: 'U315', mpr_no: 'DCC26-U315-0001-VTC', des: 275, mpr_w: 275, inv: 8,  pur: 267, arr: 210 },
-  { proj: 'U319', mpr_no: 'DCC26-U319-0001-VTC', des: 180, mpr_w: 180, inv: 15, pur: 165, arr: 98 },
-  { proj: 'E307', mpr_no: 'DCC26-E307-0001-VTC', des: 148, mpr_w: 148, inv: 0,  pur: 141, arr: 143 },
-  { proj: 'M270', mpr_no: 'DCC26-M270-0001-VTC', des: 194, mpr_w: 194, inv: 2,  pur: 192, arr: 189 },
+  { proj: 'U285', mpr_no: 'DCC26-U285-0001-VTC', des: 152, mpr_w: 152, inv: 3,  pur: 148, arr: 95,  eta: '2026-09-04' },
+  { proj: 'U285', mpr_no: 'DCC26-U285-0002-VTC', des: 88,  mpr_w: 88,  inv: 0,  pur: 88,  arr: 88,  eta: null },
+  { proj: 'U285', mpr_no: 'DCC26-U285-0003-VTC', des: 210, mpr_w: 210, inv: 12, pur: 198, arr: 120, eta: '2026-10-15' },
+  { proj: 'V314', mpr_no: 'DCC26-V314-0001-VTC', des: 480, mpr_w: 480, inv: 0,  pur: 0,   arr: 0,   eta: '2026-12-01' },
+  { proj: 'V314', mpr_no: 'DCC26-V314-0002-VTC', des: 320, mpr_w: 320, inv: 5,  pur: 315, arr: 180, eta: '2026-09-07' },
+  { proj: 'M304', mpr_no: 'DCC26-M304-0001-VTC', des: 195, mpr_w: 195, inv: 0,  pur: 182, arr: 145, eta: '2026-10-20' },
+  { proj: 'U315', mpr_no: 'DCC26-U315-0001-VTC', des: 275, mpr_w: 275, inv: 8,  pur: 267, arr: 210, eta: '2026-09-10' },
+  { proj: 'U319', mpr_no: 'DCC26-U319-0001-VTC', des: 180, mpr_w: 180, inv: 15, pur: 165, arr: 98,  eta: '2026-11-05' },
+  { proj: 'E307', mpr_no: 'DCC26-E307-0001-VTC', des: 148, mpr_w: 148, inv: 0,  pur: 141, arr: 143, eta: '2026-09-25' },
+  { proj: 'M270', mpr_no: 'DCC26-M270-0001-VTC', des: 194, mpr_w: 194, inv: 2,  pur: 192, arr: 189, eta: null },
 ];
 
 const matData = [
-  { proj: 'V314', code: 'MT-001', desc: 'HR Plate SS400 t=12mm',    des: 620, mpr: 620, pur: 512, arr: 320, usd: 385000, vnd: 0 },
-  { proj: 'V314', code: 'MT-002', desc: 'CS Pipe API 5L Gr.B',      des: 380, mpr: 380, pur: 340, arr: 180, usd: 245000, vnd: 0 },
-  { proj: 'U285', code: 'MT-003', desc: 'SS Plate SUS304 t=6mm',    des: 220, mpr: 220, pur: 218, arr: 190, usd: 198000, vnd: 0 },
-  { proj: 'U285', code: 'MT-004', desc: 'Bolt & Nut A193 B7',       des: 45,  mpr: 45,  pur: 44,  arr: 42,  usd: 62000,  vnd: 0 },
-  { proj: 'M304', code: 'MT-005', desc: 'Alloy Steel P22',          des: 320, mpr: 320, pur: 285, arr: 178, usd: 425000, vnd: 0 },
-  { proj: 'U315', code: 'MT-006', desc: 'HR Coil SS400',            des: 285, mpr: 285, pur: 262, arr: 210, usd: 0,      vnd: 6800000000 },
-  { proj: 'U315', code: 'MT-007', desc: 'Structural H-Beam',        des: 195, mpr: 195, pur: 180, arr: 165, usd: 0,      vnd: 4200000000 },
-  { proj: 'U319', code: 'MT-008', desc: 'Angle Bar L 75x75',        des: 128, mpr: 128, pur: 115, arr: 82,  usd: 0,      vnd: 2850000000 },
-  { proj: 'E307', code: 'MT-009', desc: 'Welding Consumables',      des: 12,  mpr: 12,  pur: 12,  arr: 12,  usd: 45000,  vnd: 0 },
-  { proj: 'M270', code: 'MT-010', desc: 'Gasket & Sealing',         des: 8,   mpr: 8,   pur: 8,   arr: 8,   usd: 18000,  vnd: 0 },
+  { proj: 'V314', code: 'MT-001', desc: 'HR Plate SS400 t=12mm',    des: 620, mpr: 620, pur: 512, arr: 320, usd: 385000, vnd: 0,           eta: '2026-09-06' },
+  { proj: 'V314', code: 'MT-002', desc: 'CS Pipe API 5L Gr.B',      des: 380, mpr: 380, pur: 340, arr: 180, usd: 245000, vnd: 0,           eta: '2026-10-18' },
+  { proj: 'U285', code: 'MT-003', desc: 'SS Plate SUS304 t=6mm',    des: 220, mpr: 220, pur: 218, arr: 190, usd: 198000, vnd: 0,           eta: '2026-09-12' },
+  { proj: 'U285', code: 'MT-004', desc: 'Bolt & Nut A193 B7',       des: 45,  mpr: 45,  pur: 44,  arr: 42,  usd: 62000,  vnd: 0,           eta: '2026-10-02' },
+  { proj: 'M304', code: 'MT-005', desc: 'Alloy Steel P22',          des: 320, mpr: 320, pur: 285, arr: 178, usd: 425000, vnd: 0,           eta: '2026-11-10' },
+  { proj: 'U315', code: 'MT-006', desc: 'HR Coil SS400',            des: 285, mpr: 285, pur: 262, arr: 210, usd: 0,      vnd: 6800000000,  eta: '2026-09-09' },
+  { proj: 'U315', code: 'MT-007', desc: 'Structural H-Beam',        des: 195, mpr: 195, pur: 180, arr: 165, usd: 0,      vnd: 4200000000,  eta: '2026-10-25' },
+  { proj: 'U319', code: 'MT-008', desc: 'Angle Bar L 75x75',        des: 128, mpr: 128, pur: 115, arr: 82,  usd: 0,      vnd: 2850000000,  eta: '2026-09-20' },
+  { proj: 'E307', code: 'MT-009', desc: 'Welding Consumables',      des: 12,  mpr: 12,  pur: 12,  arr: 12,  usd: 45000,  vnd: 0,           eta: null },
+  { proj: 'M270', code: 'MT-010', desc: 'Gasket & Sealing',         des: 8,   mpr: 8,   pur: 8,   arr: 8,   usd: 18000,  vnd: 0,           eta: null },
 ];
 
 /* -----------------------------------------------------------------
@@ -1096,26 +1182,28 @@ const matData = [
  * po_w = PO Weight (đã đặt); mpr = Weight MPR gộp; pur = Purchased; arr = Arrived; inv = Inventory
  * ----------------------------------------------------------------- */
 const poData = [
-  { proj:'V314', po_no:'AMC-MAR/25060101', sup:'MARUBENI (MISP)', po_w: 285.5, mpr: 280.2, pur: 275.1, arr: 268.5, inv: 4.2 },
-  { proj:'V314', po_no:'AMC-NIP/25062502', sup:'NIPPON STEEL',    po_w: 190.3, mpr: 188.6, pur: 185.4, arr: 182.1, inv: 3.5 },
-  { proj:'V314', po_no:'AMC-JFE/25082019', sup:'JFE JAPAN',       po_w: 315.8, mpr: 310.4, pur: 285.6, arr: 120.5, inv: 8.2 },
-  { proj:'U285', po_no:'AMC-POS/25070103', sup:'POSCO VN',        po_w: 220.4, mpr: 218.1, pur: 215.5, arr: 210.3, inv: 5.5 },
-  { proj:'U285', po_no:'AMC-JFE/25071008', sup:'JFE JAPAN',       po_w: 175.2, mpr: 172.5, pur: 165.8, arr: 98.4,  inv: 2.8 },
-  { proj:'U285', po_no:'AMC-AGE/25081818', sup:'AGE STEEL',       po_w: 128.6, mpr: 125.4, pur: 98.5,  arr: 45.2,  inv: 1.5 },
-  { proj:'M304', po_no:'AMC-TIT/25071504', sup:'ĐẦU TƯ TITAN',    po_w: 95.4,  mpr: 93.2,  pur: 92.8,  arr: 90.6,  inv: 1.2 },
-  { proj:'M304', po_no:'AMC-KRS/25071809', sup:'KARL STORZ',      po_w: 145.8, mpr: 143.5, pur: 135.4, arr: 88.2,  inv: 3.5 },
-  { proj:'U315', po_no:'AMC-HYD/25080106', sup:'HYUNDAI STEEL',   po_w: 165.5, mpr: 162.8, pur: 158.4, arr: 155.6, inv: 2.5 },
-  { proj:'U315', po_no:'AMC-HYD/25072010', sup:'HYUNDAI STEEL',   po_w: 220.8, mpr: 218.4, pur: 208.5, arr: 105.3, inv: 6.2 },
-  { proj:'U319', po_no:'AMC-HP/25081014',  sup:'HÒA PHÁT',        po_w: 148.2, mpr: 145.5, pur: 140.8, arr: 82.4,  inv: 15.8 },
-  { proj:'E307', po_no:'AMC-BRB/25080515', sup:'BREMBANA&ROLLE',  po_w: 78.5,  mpr: 76.8,  pur: 74.2,  arr: 68.5,  inv: 2.1 },
-  { proj:'E307', po_no:'AMC-TVD/25073005', sup:'THÉP VIỆT ĐỨC',   po_w: 65.4,  mpr: 63.8,  pur: 63.5,  arr: 62.8,  inv: 0.5 },
-  { proj:'M270', po_no:'AMC-HP/25081513',  sup:'HÒA PHÁT',        po_w: 88.6,  mpr: 86.4,  pur: 82.5,  arr: 78.2,  inv: 2.8 },
-  { proj:'M270', po_no:'AMC-HIT/25082825', sup:'HITACHI',         po_w: 108.5, mpr: 105.6, pur: 95.4,  arr: 45.8,  inv: 8.5 },
+  { proj:'V314', po_no:'AMC-MAR/25060101', sup:'MARUBENI (MISP)', po_w: 285.5, mpr: 280.2, pur: 275.1, arr: 268.5, inv: 4.2,  eta: '2026-09-02' },
+  { proj:'V314', po_no:'AMC-NIP/25062502', sup:'NIPPON STEEL',    po_w: 190.3, mpr: 188.6, pur: 185.4, arr: 182.1, inv: 3.5,  eta: null },
+  { proj:'V314', po_no:'AMC-JFE/25082019', sup:'JFE JAPAN',       po_w: 315.8, mpr: 310.4, pur: 285.6, arr: 120.5, inv: 8.2,  eta: '2026-09-15' },
+  { proj:'U285', po_no:'AMC-POS/25070103', sup:'POSCO VN',        po_w: 220.4, mpr: 218.1, pur: 215.5, arr: 210.3, inv: 5.5,  eta: null },
+  { proj:'U285', po_no:'AMC-JFE/25071008', sup:'JFE JAPAN',       po_w: 175.2, mpr: 172.5, pur: 165.8, arr: 98.4,  inv: 2.8,  eta: '2026-09-05' },
+  { proj:'U285', po_no:'AMC-AGE/25081818', sup:'AGE STEEL',       po_w: 128.6, mpr: 125.4, pur: 98.5,  arr: 45.2,  inv: 1.5,  eta: '2026-10-12' },
+  { proj:'M304', po_no:'AMC-TIT/25071504', sup:'ĐẦU TƯ TITAN',    po_w: 95.4,  mpr: 93.2,  pur: 92.8,  arr: 90.6,  inv: 1.2,  eta: null },
+  { proj:'M304', po_no:'AMC-KRS/25071809', sup:'KARL STORZ',      po_w: 145.8, mpr: 143.5, pur: 135.4, arr: 88.2,  inv: 3.5,  eta: '2026-09-08' },
+  { proj:'U315', po_no:'AMC-HYD/25080106', sup:'HYUNDAI STEEL',   po_w: 165.5, mpr: 162.8, pur: 158.4, arr: 155.6, inv: 2.5,  eta: '2026-10-30' },
+  { proj:'U315', po_no:'AMC-HYD/25072010', sup:'HYUNDAI STEEL',   po_w: 220.8, mpr: 218.4, pur: 208.5, arr: 105.3, inv: 6.2,  eta: '2026-09-11' },
+  { proj:'U319', po_no:'AMC-HP/25081014',  sup:'HÒA PHÁT',        po_w: 148.2, mpr: 145.5, pur: 140.8, arr: 82.4,  inv: 15.8, eta: '2026-11-20' },
+  { proj:'E307', po_no:'AMC-BRB/25080515', sup:'BREMBANA&ROLLE',  po_w: 78.5,  mpr: 76.8,  pur: 74.2,  arr: 68.5,  inv: 2.1,  eta: '2026-09-18' },
+  { proj:'E307', po_no:'AMC-TVD/25073005', sup:'THÉP VIỆT ĐỨC',   po_w: 65.4,  mpr: 63.8,  pur: 63.5,  arr: 62.8,  inv: 0.5,  eta: null },
+  { proj:'M270', po_no:'AMC-HP/25081513',  sup:'HÒA PHÁT',        po_w: 88.6,  mpr: 86.4,  pur: 82.5,  arr: 78.2,  inv: 2.8,  eta: '2026-09-03' },
+  { proj:'M270', po_no:'AMC-HIT/25082825', sup:'HITACHI',         po_w: 108.5, mpr: 105.6, pur: 95.4,  arr: 45.8,  inv: 8.5,  eta: '2026-10-05' },
 ];
 
 /* -----------------------------------------------------------------
  * LOGISTIC DATA — 1 record = 1 shipment
  * status: 'PENDING' (chưa xuất) | 'ON_BOAT' | 'AT_PORT' | 'AT_AMECC'
+ * eta_update = Plan ETA Update (ETA cam kết mới nhất về Amecc). Nếu trống → fallback plan_arrival.
+ *              Dùng để tính "lô giao chậm" ở chart NCC chậm.
  * transport: 'SEA' | 'AIR' | 'TRUCK'
  * Ngày assume today = 2026-08-28
  * ----------------------------------------------------------------- */
@@ -1123,14 +1211,14 @@ const logisticData = [
   // ===== ĐÃ VỀ AMECC =====
   { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25060101',   bill:'MRUB456712',       vessel:'EVER GIVEN 2607E',    transport:'SEA',   origin:'IMPORT',   qty:26.5, etd:'2026-06-10', eta:'2026-06-28', storage_due:'2026-07-08', plan_arrival:'2026-07-05', actual_arrival:'2026-07-04', status:'AT_AMECC' },
   { proj:'V314', sup:'NIPPON STEEL',    po:'AMC-NIP/25062502',   bill:'NPNSTL-091234',   vessel:'ONE APUS 2612W',       transport:'SEA',   origin:'IMPORT',   qty:18.2, etd:'2026-06-25', eta:'2026-07-14', storage_due:'2026-07-24', plan_arrival:'2026-07-20', actual_arrival:'2026-07-19', status:'AT_AMECC' },
-  { proj:'U285', sup:'POSCO VN',        po:'AMC-POS/25070103',   bill:'POSC-77812',      vessel:'STARSHIP TAURUS 2707S',transport:'SEA',   origin:'IMPORT',   qty:32.1, etd:'2026-07-01', eta:'2026-07-16', storage_due:'2026-07-26', plan_arrival:'2026-07-22', actual_arrival:'2026-07-24', status:'AT_AMECC' },
+  { proj:'U285', sup:'POSCO VN',        po:'AMC-POS/25070103',   bill:'POSC-77812',      vessel:'STARSHIP TAURUS 2707S',transport:'SEA',   origin:'IMPORT',   qty:32.1, etd:'2026-07-01', eta:'2026-07-16', storage_due:'2026-07-26', plan_arrival:'2026-07-22', eta_update:'2026-07-22', actual_arrival:'2026-07-24', status:'AT_AMECC' },
   { proj:'M304', sup:'ĐẦU TƯ TITAN',    po:'AMC-TIT/25071504',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:12.8, etd:'2026-07-20', eta:'2026-07-20', storage_due:'—',          plan_arrival:'2026-07-22', actual_arrival:'2026-07-22', status:'AT_AMECC' },
   { proj:'E307', sup:'THÉP VIỆT ĐỨC',   po:'AMC-TVD/25073005',   bill:'—',               vessel:'—',                    transport:'TRUCK', origin:'DOMESTIC', qty:8.4,  etd:'2026-08-05', eta:'2026-08-05', storage_due:'—',          plan_arrival:'2026-08-06', actual_arrival:'2026-08-06', status:'AT_AMECC' },
   { proj:'U315', sup:'HYUNDAI STEEL',   po:'AMC-HYD/25080106',   bill:'HYUN-45689',      vessel:'HMM SIRIUS 2707E',      transport:'SEA',   origin:'IMPORT',   qty:22.5, etd:'2026-07-25', eta:'2026-08-10', storage_due:'2026-08-20', plan_arrival:'2026-08-15', actual_arrival:'2026-08-16', status:'AT_AMECC' },
 
   // ===== QUÁ HẠN STORAGE (chưa arrival, storage_due < 2026-08-28) =====
-  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25070207',   bill:'MRUB458891',       vessel:'MSC OSCAR 2707W',      transport:'SEA',   origin:'IMPORT',   qty:45.8, etd:'2026-07-05', eta:'2026-08-01', storage_due:'2026-08-11', plan_arrival:'2026-08-15', actual_arrival:null, status:'AT_PORT' },
-  { proj:'U285', sup:'JFE JAPAN',       po:'AMC-JFE/25071008',   bill:'JFE-660192',       vessel:'ONE HUMBER 2708E',     transport:'SEA',   origin:'IMPORT',   qty:38.2, etd:'2026-07-12', eta:'2026-08-05', storage_due:'2026-08-15', plan_arrival:'2026-08-18', actual_arrival:null, status:'AT_PORT' },
+  { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25070207',   bill:'MRUB458891',       vessel:'MSC OSCAR 2707W',      transport:'SEA',   origin:'IMPORT',   qty:45.8, etd:'2026-07-05', eta:'2026-08-01', storage_due:'2026-08-11', plan_arrival:'2026-08-15', eta_update:'2026-09-04', actual_arrival:null, status:'AT_PORT' },
+  { proj:'U285', sup:'JFE JAPAN',       po:'AMC-JFE/25071008',   bill:'JFE-660192',       vessel:'ONE HUMBER 2708E',     transport:'SEA',   origin:'IMPORT',   qty:38.2, etd:'2026-07-12', eta:'2026-08-05', storage_due:'2026-08-15', plan_arrival:'2026-08-18', eta_update:'2026-08-18', actual_arrival:null, status:'AT_PORT' },
   { proj:'M304', sup:'KARL STORZ',      po:'AMC-KRS/25071809',   bill:'KRLS-33456',       vessel:'HAPAG EXPRESS 2708',   transport:'SEA',   origin:'IMPORT',   qty:15.3, etd:'2026-07-15', eta:'2026-08-08', storage_due:'2026-08-18', plan_arrival:'2026-08-22', actual_arrival:null, status:'AT_PORT' },
 
   // ===== TỒN Ở PORT — sắp hết hạn storage (storage_due ≤ 2026-09-05) =====
@@ -1157,6 +1245,104 @@ const logisticData = [
   { proj:'V314', sup:'MARUBENI (MISP)', po:'AMC-MAR/25082924',   bill:'—',               vessel:'—',                    transport:'SEA',   origin:'IMPORT',   qty:38.9, etd:'2026-09-10', eta:'2026-10-02', storage_due:'2026-10-12', plan_arrival:'2026-10-08', actual_arrival:null, status:'PENDING' },
   { proj:'M270', sup:'HITACHI',         po:'AMC-HIT/25082825',   bill:'—',               vessel:'—',                    transport:'AIR',   origin:'IMPORT',   qty:1.2,  etd:'2026-09-01', eta:'2026-09-03', storage_due:'2026-09-13', plan_arrival:'2026-09-06', actual_arrival:null, status:'PENDING' },
   { proj:'E307', sup:'BREMBANA&ROLLE',  po:'AMC-BRB/25082626',   bill:'—',               vessel:'—',                    transport:'SEA',   origin:'IMPORT',   qty:15.5, etd:'2026-09-08', eta:'2026-09-30', storage_due:'2026-10-10', plan_arrival:'2026-10-05', actual_arrival:null, status:'PENDING' },
+];
+
+/* -----------------------------------------------------------------
+ * EXPORT DATA — chuyển từ file mẫu "Xuất khẩu" (các lô có ETD/kế hoạch năm 2026, dòng 161→247)
+ * Cột nguồn: No. / Date Input / Project No. / Export type / Item of goods / Transport Mode /
+ *            Type CTR / Q'ty CTR / Q'ty GW (kg) / Vessel No. / Carriers-Agent / Bill No /
+ *            POL / POD / ETD / ETA / CDs No / C/O / Status / PIC
+ * Ghi chú: hàng FCL không có GW(kg) → sản lượng đo bằng SỐ CONTAINER; KL(tấn) chỉ tính được
+ *          cho hàng rời (BV), AIR và xe tải. etd trống → dùng ngày cutoff CY thay thế.
+ * ----------------------------------------------------------------- */
+const exportData = [
+  { no:161, di:'26/12/25', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:10, gw:0,       vessel:'',                          carrier:'HANS',       bill:'100FX22181',        pol:'',             pod:'',                      etd:'2026-01-02', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:162, di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'CEVA',       bill:'6439419590',        pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:163, di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'',                          carrier:'HANS',       bill:'HANA37472400',      pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:164, di:'',         proj:'U273', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'EVEROK',     bill:'ZIMUHAI80192611',   pol:'',             pod:'',                      etd:'2026-01-09', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:165, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:939085,  vessel:'VIOLET ACE V.J2601E',       carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-13', eta:'',           cds:'308144141340', co:'',      st:'DONE', pic:'' },
+  { no:166, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:933312,  vessel:'MV DA HONG XIA V084',       carrier:'Age Lines',  bill:'',                  pol:'Đoạn Xá',      pod:'',                      etd:'2026-01-15', eta:'',           cds:'308154866300', co:'',      st:'DONE', pic:'' },
+  { no:167, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'STEPHANIA K 030S',          carrier:'HANS',       bill:'2316869530',        pol:'Nam Đình Vũ',  pod:'',                      etd:'2026-01-14', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:168, di:'11/01/26', proj:'F0243',et:'E62', item:'Băng tải than',       mode:'FCL',   ctr:'OT', qty:10, gw:0,       vessel:'MSC ELBA III HV552R',       carrier:'DSV',        bill:'EBKG15369448',      pol:'HITC',         pod:'',                      etd:'2026-01-14', eta:'',           cds:'308146589500', co:'',      st:'DONE', pic:'' },
+  { no:169, di:'16/01/26', proj:'(N/A)',et:'H21', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:440,     vessel:'RH0318/17JAN',              carrier:'TSL',        bill:'HORD26010034',      pol:'Nội Bài',      pod:'',                      etd:'2026-01-17', eta:'',           cds:'308156249130', co:'',      st:'DONE', pic:'' },
+  { no:170, di:'17/01/26', proj:'E275', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:120182,  vessel:'MV YI HUI REN HAI V.2601',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-19', eta:'',           cds:'308166876750', co:'',      st:'DONE', pic:'' },
+  { no:171, di:'17/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:330932,  vessel:'MV NAVI SUNNY V.MK2605E',   carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-21', eta:'',           cds:'308168378620', co:'',      st:'DONE', pic:'' },
+  { no:172, di:'22/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:5,  gw:36066,   vessel:'EVER CERTAIN N072',         carrier:'HANS',       bill:'100GA00099',        pol:'VIP',          pod:'DAMMAM',                etd:'2026-01-30', eta:'',           cds:'308192619840', co:'xong', st:'DONE', pic:'' },
+  { no:173, di:'28/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:866969,  vessel:'MV Silver Place',           carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:174, di:'30/01/26', proj:'B272', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'HANSA COLOMBO 072S',        carrier:'BEE',        bill:'6443658670',        pol:'Nam Đình Vũ',  pod:'Algeria',               etd:'2026-02-03', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:175, di:'30/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:0,       vessel:'Hai Duong 09',              carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:176, di:'30/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'CSCL GLOBE 074W',           carrier:'HANS',       bill:'2319584390',        pol:'HẢI PHÒNG',    pod:'DAMMAM',                etd:'2026-02-13', eta:'',           cds:'308250960160', co:'xong', st:'DONE', pic:'' },
+  { no:177, di:'07/02/26', proj:'A286', et:'B13', item:'Van & phụ kiện',      mode:'XETAI', ctr:'',   qty:0,  gw:11,      vessel:'Xe tải',                    carrier:'',           bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-02-10', eta:'',           cds:'308243874542', co:'',      st:'DONE', pic:'' },
+  { no:178, di:'11/02/26', proj:'E275', et:'E52', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:240288,  vessel:'XIN HAI TONG 502 V.SE2604', carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'VENICE',                etd:'2026-03-06', eta:'',           cds:'308285316750', co:'',      st:'DONE', pic:'' },
+  { no:179, di:'23/02/26', proj:'U302', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-03-01', eta:'',           cds:'308271773300', co:'',      st:'DONE', pic:'' },
+  { no:180, di:'23/02/26', proj:'M277', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'PEGASUS GLORY 2605N',       carrier:'HANS',       bill:'HANA31844600',      pol:'TÂN VŨ',       pod:'',                      etd:'2026-03-09', eta:'',           cds:'308281111630', co:'',      st:'DONE', pic:'' },
+  { no:181, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:5,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'6446168400',        pol:'HITC',         pod:'',                      etd:'2026-03-09', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:182, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:7,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'',                  pol:'',             pod:'',                      etd:'2026-03-14', eta:'',           cds:'308320368440', co:'',      st:'DONE', pic:'' },
+  { no:183, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:85349,   vessel:'COSCO VENICE / 077E',       carrier:'FLS',        bill:'HCM00000622A',      pol:'LẠCH HUYỆN',   pod:'SEATTLE, USA',          etd:'2026-03-22', eta:'',           cds:'308338797600', co:'',      st:'DONE', pic:'' },
+  { no:184, di:'27/03/26', proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'COSCO SANTOS 098E',         carrier:'FLS',        bill:'6447802040',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-03-28', eta:'2026-04-02', cds:'',             co:'xong', st:'DONE', pic:'' },
+  { no:185, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FT', qty:5,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6447887970',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390500960', co:'xong', st:'DONE', pic:'' },
+  { no:186, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448786270',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390501660', co:'xong', st:'DONE', pic:'' },
+  { no:187, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448858740',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390502360', co:'xong', st:'DONE', pic:'' },
+  { no:188, di:'09/04/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'XIN DAN DONG 560E',         carrier:'FLS',        bill:'6450295080',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-18', eta:'2026-05-18', cds:'308440580360', co:'xong', st:'DONE', pic:'' },
+  { no:189, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:12005,   vessel:'ULSAN 616S',                carrier:'Hapag Lloyd',bill:'HNSE26040085',      pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-16', eta:'2026-06-11', cds:'308428675720', co:'xong', st:'DONE', pic:'' },
+  { no:190, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'308468447030', co:'không',st:'DONE', pic:'' },
+  { no:191, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR+OT',qty:4,gw:0,       vessel:'TANJUNG PELEPAS',           carrier:'Hapag Lloyd',bill:'24437755',          pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-29', eta:'2026-06-08', cds:'308474052410', co:'xong', st:'DONE', pic:'' },
+  { no:192, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3132126',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467133460', co:'xong', st:'DONE', pic:'' },
+  { no:193, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3123585',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467353040', co:'xong', st:'DONE', pic:'' },
+  { no:194, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:1,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3137067',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308466862820', co:'xong', st:'DONE', pic:'' },
+  { no:195, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:34709,   vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX06929',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-09', eta:'',           cds:'308502713910', co:'xong', st:'DONE', pic:'' },
+  { no:196, di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'CNC URANUS',                carrier:'Deugro',     bill:'SSEL00002808',      pol:'Nam Đình Vũ',  pod:'HAMAD',                 etd:'2026-05-10', eta:'',           cds:'308510165410', co:'xong', st:'DONE', pic:'' },
+  { no:197, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'AMECC',        pod:'QUẢNG NGÃI',            etd:'2026-05-08', eta:'2026-05-10', cds:'308511147730', co:'không',st:'DONE', pic:'' },
+  { no:198, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'ULSAN 620S',                carrier:'HANS',       bill:'HLCUSGN2604BCOX0',  pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-14', eta:'2026-07-04', cds:'308517503030', co:'xong', st:'DONE', pic:'' },
+  { no:199, di:'22/05/26', proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:8,  gw:0,       vessel:'GOLDEN STAR 1 6622N',       carrier:'TGL',        bill:'ONEHANG51252500',   pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-14', eta:'2026-05-19', cds:'308525960430', co:'xong', st:'DONE', pic:'' },
+  { no:200, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:15, gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518811700', co:'xong', st:'DONE', pic:'' },
+  { no:201, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600296752',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308522968850', co:'không',st:'DONE', pic:'' },
+  { no:202, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:9,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518528420', co:'xong', st:'DONE', pic:'' },
+  { no:203, di:'22/05/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX08243',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-31', eta:'2026-06-26', cds:'308581412440', co:'xong', st:'DONE', pic:'' },
+  { no:204, di:'01/06/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:26337,   vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3205497',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-08', eta:'2026-07-06', cds:'308607521150', co:'nháp', st:'DONE', pic:'' },
+  { no:205, di:'30/05/26', proj:'A286', et:'B13', item:'Nguyên vật liệu',     mode:'BV',    ctr:'',   qty:0,  gw:438,     vessel:'HANSA COLOMBO 080S',        carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-05-30', eta:'2026-06-05', cds:'308582594040', co:'',      st:'DONE', pic:'' },
+  { no:206, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1248215, vessel:'BBC TOKYO Voy.1386005',     carrier:'THORENSEN',  bill:'BBCTOKYO',          pol:'MIPEC',        pod:'ALABAMA, USA',          etd:'2026-06-08', eta:'2026-07-08', cds:'308621763020', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:207, di:'23/05/26', proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1163540, vessel:'MV DERYOUNG SPRING',        carrier:'VOSA',       bill:'HPBA6061601',       pol:'MIPEC',        pod:'SEAFRONT PORT, BATAAN', etd:'2026-06-13', eta:'2026-06-21', cds:'308573994800', co:'không',st:'DONE', pic:'' },
+  { no:208, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'122600042708807',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-13', eta:'2026-07-11', cds:'308625698530', co:'xong', st:'DONE', pic:'' },
+  { no:209, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3235394',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-19', eta:'2026-07-13', cds:'308645677450', co:'xong', st:'DONE', pic:'Tiến Anh' },
+  { no:210, di:'',         proj:'N323', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'YM THRONE 020E',            carrier:'HMM',        bill:'HANA93889600',      pol:'HẢI PHÒNG',    pod:'BUSAN',                 etd:'2026-06-15', eta:'2026-06-24', cds:'308635091940', co:'',      st:'DONE', pic:'' },
+  { no:211, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'ZIM MOUNT DENALI 14/E',     carrier:'THI',        bill:'122600043073138',   pol:'HẢI PHÒNG',    pod:'CHARLESTON',            etd:'2026-06-23', eta:'2026-08-13', cds:'308651703420', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:212, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:0,  gw:12877,   vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-06-18', eta:'2026-06-20', cds:'308649702710', co:'không',st:'DONE', pic:'' },
+  { no:213, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'PRIDE PACIFIC 2624E',       carrier:'HANS',       bill:'122600043300213',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-26', eta:'2026-07-27', cds:'308667497040', co:'xong', st:'DONE', pic:'' },
+  { no:214, di:'',         proj:'E307', et:'E52', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:2160,    vessel:'S26AHA10006400',            carrier:'MAERSK',     bill:'HA100006400',       pol:'Nội Bài',      pod:'MALPENSA / MILANO',     etd:'2026-06-28', eta:'',           cds:'308683421710', co:'không',st:'DONE', pic:'' },
+  { no:215, di:'',         proj:'A294', et:'B11', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600381016',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698556740', co:'không',st:'DONE', pic:'' },
+  { no:216, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:7,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600388649',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698461800', co:'xong', st:'DONE', pic:'' },
+  { no:217, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 366',               carrier:'HANS',       bill:'122600043751698',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-11', eta:'2026-07-21', cds:'308699779050', co:'xong', st:'DONE', pic:'' },
+  { no:218, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1146856, vessel:'MV ALIOTH M2609E',          carrier:'Age Lines',  bill:'122600044126567',   pol:'MIPEC',        pod:'JEDDAH',                etd:'2026-07-14', eta:'',           cds:'308725851030', co:'xong', st:'DONE', pic:'Thể' },
+  { no:219, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:11, gw:72307,   vessel:'ZIM MOUNT VINSON 11/E',     carrier:'Everok',     bill:'OEGHPH26070169',    pol:'HẢI PHÒNG',    pod:'CHARLESTON - SC',       etd:'2026-07-13', eta:'2026-08-19', cds:'308730609850', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:220, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308711989740', co:'xong', st:'DONE', pic:'' },
+  { no:221, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308712007940', co:'xong', st:'DONE', pic:'' },
+  { no:222, di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1803000, vessel:'DA HONG XIA',               carrier:'Age Lines',  bill:'122600044097134',   pol:'MIPEC',        pod:'HAMAD',                 etd:'2026-07-13', eta:'2026-08-12', cds:'308723601820', co:'nháp', st:'',     pic:'Hợi - Lộc' },
+  { no:223, di:'',         proj:'M296', et:'B13', item:'Nguyên vật liệu',     mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'TGL',        bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'Dũng' },
+  { no:224, di:'',         proj:'B272', et:'H21', item:'Bê tông chịu nhiệt',  mode:'AIR',   ctr:'',   qty:0,  gw:0,       vessel:'',                          carrier:'BACHVIET',   bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:225, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'LUCKY BLESSING',            carrier:'HANS',       bill:'122600044698919',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-24', eta:'2026-08-17', cds:'308766961330', co:'nháp', st:'DONE', pic:'Tiến Anh' },
+  { no:226, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'GP', qty:6,  gw:0,       vessel:'ULSAN DP',                  carrier:'HANS',       bill:'122600044685834',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-31', eta:'2026-09-26', cds:'308766075020', co:'nháp', st:'DONE', pic:'' },
+  { no:227, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1432486, vessel:'MV HG FLUSHING V.26189',    carrier:'VANTAGE',    bill:'122600045043310',   pol:'HÒN GAI',      pod:'JEDDAH',                etd:'2026-08-02', eta:'2026-08-31', cds:'308791253800', co:'xong', st:'DONE', pic:'Thể' },
+  { no:228, di:'',         proj:'A286', et:'B13', item:'Ống và phụ kiện',     mode:'FCL',   ctr:'HC', qty:5,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'OMC',        bill:'HASLS55260700184',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308837621800', co:'không',st:'DONE', pic:'' },
+  { no:229, di:'',         proj:'U326', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'COSCO SHIPPING JASMINE 040E',carrier:'VANTAGE',   bill:'122600045732794',   pol:'HẢI PHÒNG',    pod:'DALLAS',                etd:'2026-08-14', eta:'2026-09-11', cds:'308839222920', co:'nháp', st:'',     pic:'' },
+  { no:230, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:3,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:231, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:232, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:233, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'HAIAN DELL 045S',           carrier:'TGL',        bill:'ONEYHANGB7351800',  pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-08-24', eta:'2026-09-02', cds:'',             co:'chưa', st:'DONE', pic:'' },
+  { no:234, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:8790,    vessel:'TK6203',                    carrier:'',           bill:'235-96347963',      pol:'HÀ NỘI',       pod:'CHARLESTON',            etd:'2026-08-08', eta:'2026-08-15', cds:'308826227310', co:'không',st:'DONE', pic:'Alex Soe' },
+  { no:235, di:'',         proj:'U316', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:3372,    vessel:'K40601',                    carrier:'',           bill:'',                  pol:'HÀ NỘI',       pod:'CHICAGO',               etd:'2026-08-10', eta:'',           cds:'308830592030', co:'không',st:'DONE', pic:'' },
+  { no:236, di:'',         proj:'U302', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1214196, vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046169129',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872062350', co:'chưa', st:'',     pic:'Hùng' },
+  { no:237, di:'',         proj:'U292', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:92714,   vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046196808',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872711140', co:'chưa', st:'',     pic:'' },
+  { no:238, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1410643, vessel:'',                          carrier:'VANTAGE',    bill:'',                  pol:'MIPEC',        pod:'KING ABDULLAH, KSA',    etd:'2026-09-09', eta:'2026-09-12', cds:'308933001000', co:'chưa', st:'',     pic:'' },
+  { no:239, di:'',         proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1745187, vessel:'DERYOUNG SUNSHINE V.1004',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'SEAFRONT, BATAAN',      etd:'2026-09-10', eta:'2026-09-12', cds:'308934603300', co:'không',st:'DONE', pic:'' },
+  { no:240, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'GP', qty:1,  gw:0,       vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'6464205540',        pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
+  { no:241, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:12, gw:47755,   vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'COAU6464205550',    pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-18', eta:'',           cds:'',             co:'chưa', st:'',     pic:'' },
+  { no:242, di:'',         proj:'A286', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:2482950, vessel:'',                          carrier:'Dolphin',    bill:'122600046281372',   pol:'Nam Đình Vũ',  pod:'TANJUNG SETAPA',        etd:'2026-08-27', eta:'',           cds:'',             co:'không',st:'DONE', pic:'' },
+  { no:243, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'HAIAN VIEW 174S',           carrier:'ONE',        bill:'ONEYHANGB7351800',  pol:'Nam Hải ĐV',   pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'308941841960', co:'chưa', st:'',     pic:'' },
+  { no:244, di:'',         proj:'M296', et:'B13', item:'Van & phụ kiện',      mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'Nam Đình Vũ',  pod:'KHALIFA PORT, ABU DHABI',etd:'2026-09-16',eta:'',           cds:'',             co:'không',st:'',     pic:'Dũng' },
+  { no:245, di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:13, gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'TÂN VŨ',       pod:'',                      etd:'2026-09-14', eta:'',           cds:'',             co:'',      st:'',     pic:'Dũng' },
+  { no:246, di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'SUNNY ACACIA 2614N',        carrier:'KMTC',       bill:'VN01159819',        pol:'TÂN VŨ',       pod:'BUSAN',                 etd:'2026-09-14', eta:'',           cds:'308944958510', co:'',      st:'',     pic:'Dũng' },
+  { no:247, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'ZIM MOUNT DENALI 15/E',     carrier:'ZIM',        bill:'ZIMUHAI80249982',   pol:'HITC',         pod:'CHARLESTON',            etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
 ];
 
 /* =============== GLOBAL STATE =============== */
@@ -1206,6 +1392,52 @@ if (typeof ChartDataLabels !== 'undefined') {
   });
 }
 
+/* ---- Ngày hệ thống (giả lập khớp kỳ báo cáo) ---- */
+const TODAY = new Date('2026-08-28');
+const DAY_MS = 86400000;
+const parseD = s => (s === '—' || !s) ? null : new Date(s);
+const daysTo = s => { const d = parseD(s); return d ? Math.round((d - TODAY) / DAY_MS) : null; };
+const fmtD = s => s || '—';
+
+/* ---- TRẠNG THÁI VẬT TƯ (3 mức) ----
+ *  Đủ        : % Arrived >= 98%
+ *  Rủi ro    : chưa đủ 98% VÀ ETA Update gần nhất còn < 15 ngày (kể cả đã quá hạn)
+ *  Đang nhập : các trường hợp còn lại
+ * ------------------------------------ */
+const STATUS_THRESHOLD = 98;
+const RISK_DAYS = 15;
+const ST_COLORS = { 'Đủ': '#2fb344', 'Đang nhập': '#4299e1', 'Rủi ro': '#d63939' };
+
+function matStatus(arrRatio, eta) {
+  if (arrRatio >= STATUS_THRESHOLD) return 'Đủ';
+  const d = daysTo(eta);
+  if (d !== null && d < RISK_DAYS) return 'Rủi ro';
+  return 'Đang nhập';
+}
+function statusBuckets(rows, ratioFn) {
+  const b = { 'Đủ': 0, 'Đang nhập': 0, 'Rủi ro': 0 };
+  rows.forEach(r => { b[matStatus(ratioFn(r), r.eta)]++; });
+  return b;
+}
+function statusDoughnut(canvasId, buckets, unit) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{ data: Object.values(buckets), backgroundColor: Object.keys(buckets).map(k => ST_COLORS[k]), borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
+        datalabels: { color: '#fff', font: { size: 14, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? v : '' },
+        tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a,b)=>a+b,0); const p = t ? (c.raw/t*100).toFixed(2) : 0; return ` ${c.label}: ${c.raw} ${unit} (${p}%)`; } } }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
 function pbar(pct) {
   const w = Math.max(0, Math.min(100, pct));
   let color = 'var(--success)';
@@ -1213,11 +1445,12 @@ function pbar(pct) {
   else if (pct < 80) color = 'var(--warning)';
   return `<div class="pbar"><div class="pbar-track"><div class="pbar-fill" style="width:${w}%; background:${color}"></div></div><span class="pbar-txt">${pct.toFixed(2)}%</span></div>`;
 }
-function statusPill(arrRatio) {
-  if (arrRatio >= 98) return `<span class="status-pill badge-success">Đủ</span>`;
-  if (arrRatio >= 50) return `<span class="status-pill badge-info">Đang nhập</span>`;
-  if (arrRatio >= 20) return `<span class="status-pill badge-warning">Chú ý</span>`;
-  return `<span class="status-pill badge-danger">Rủi ro</span>`;
+function statusPill(arrRatio, eta) {
+  const st = matStatus(arrRatio, eta);
+  const cls = st === 'Đủ' ? 'badge-success' : (st === 'Rủi ro' ? 'badge-danger' : 'badge-info');
+  const d = daysTo(eta);
+  const hint = (st === 'Rủi ro' && d !== null) ? ` title="ETA Update ${fmtD(eta)} · còn ${d} ngày"` : '';
+  return `<span class="status-pill ${cls}"${hint}>${st}</span>`;
 }
 function filterByProj(arr) {
   return currentProject === 'ALL' ? arr : arr.filter(r => r.proj === currentProject);
@@ -1370,9 +1603,15 @@ function niceMax(v) {
 }
 
 /* =============== POPULATE SLICERS =============== */
+const PROJ_OPTIONS = (() => {
+  const m = new Map();
+  overviewData.forEach(r => m.set(r.proj, r.client));
+  exportData.forEach(r => { if (!m.has(r.proj)) m.set(r.proj, 'Xuất khẩu'); });
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+})();
 document.querySelectorAll('.proj-slicer').forEach(sel => {
-  overviewData.forEach(r => {
-    sel.insertAdjacentHTML('beforeend', `<option value="${r.proj}">${r.proj} — ${r.client}</option>`);
+  PROJ_OPTIONS.forEach(([proj, client]) => {
+    sel.insertAdjacentHTML('beforeend', `<option value="${proj}">${proj} — ${client}</option>`);
   });
   sel.addEventListener('change', (e) => {
     currentProject = e.target.value;
@@ -1799,38 +2038,10 @@ function renderSupplierCharts(rows) {
   });
   renderHBarAxis('chart-sup-top-axis', supTopMax, supTopDatasets, false);
 
-  // Status buckets
-  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
-  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
-  rows.forEach(r => {
-    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 98) buckets['Đủ']++;
-    else if (arrR >= 50) buckets['Đang nhập']++;
-    else if (arrR >= 20) buckets['Chú ý']++;
-    else buckets['Rủi ro']++;
-  });
-
+  // Status buckets (3 mức: Đủ / Đang nhập / Rủi ro)
+  const buckets = statusBuckets(rows, r => r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0);
   if (supStatusChart) supStatusChart.destroy();
-  supStatusChart = new Chart(document.getElementById('chart-sup-status'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(buckets),
-      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
-        datalabels: {
-          color: '#fff', font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v) => v > 0 ? v : ''
-        },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} NCC (${p}%)`; } } }
-      },
-      cutout: '58%'
-    }
-  });
+  supStatusChart = statusDoughnut('chart-sup-status', buckets, 'NCC');
 }
 
 function renderSupplier() {
@@ -1839,23 +2050,22 @@ function renderSupplier() {
   tbody.innerHTML = '';
 
   const uniqSup = new Set(rows.map(r => r.sup)).size;
-  let done = 0, risk = 0, waiting = 0;
+  let risk = 0;
   const totKL = rows.reduce((a, r) => ({
     mpr: a.mpr + r.mpr, pur: a.pur + r.pur, arr: a.arr + r.arr, inv: a.inv + r.inv
   }), { mpr:0, pur:0, arr:0, inv:0 });
   const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
   rows.forEach(r => {
     const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 98) done++;
-    else if (arrR < 30) { risk++; waiting++; }
-    else if (arrR < 60) waiting++;
+    if (matStatus(arrR, r.eta) === 'Rủi ro') risk++;
   });
+  const arrPct = totKL.mpr ? ((totKL.arr + totKL.inv) / totKL.mpr * 100) : 0;
 
   document.getElementById('sup-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng KL nhánh NCC</div>
+      <div class="metric-label">Tổng KL MPR</div>
       <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+      <div class="metric-sub">Nhu cầu vật tư của nhánh NCC</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Số Nhà cung cấp</div>
@@ -1863,19 +2073,19 @@ function renderSupplier() {
       <div class="metric-sub">Đang có giao dịch</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">PO đang chờ hàng</div>
-      <div><span class="metric-value" style="color:var(--warning)">${waiting}</span></div>
-      <div class="metric-sub">Ordering / Waiting</div>
+      <div class="metric-label">Arrived</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt(totKL.arr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${arrPct.toFixed(2)}% so với MPR (gồm Inventory)</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">NCC hoàn thành</div>
-      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
-      <div class="metric-sub">Ratio Arrived ≥ 98%</div>
+      <div class="metric-label">Balance</div>
+      <div><span class="metric-value" style="color:var(--danger)">${fmt(totBal)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR − Arrived − Inventory</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">NCC rủi ro cao</div>
+      <div class="metric-label">NCC rủi ro</div>
       <div><span class="metric-value" style="color:var(--danger)">${risk}</span></div>
-      <div class="metric-sub">Ratio Arrived &lt; 30%</div>
+      <div class="metric-sub">Chưa đủ 98% · ETA Update &lt; 15 ngày</div>
     </div>
   `;
 
@@ -1901,7 +2111,7 @@ function renderSupplier() {
         <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
-        <td>${statusPill(arrR)}</td>
+        <td>${statusPill(arrR, r.eta)}</td>
       </tr>
     `);
   });
@@ -1935,38 +2145,10 @@ function renderMPRCharts(rows) {
   });
   renderHBarAxis('chart-mpr-top-axis', mprTopMax, mprTopDatasets, false);
 
-  // Status buckets
-  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
-  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
-  rows.forEach(r => {
-    const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
-    if (arrR >= 98) buckets['Đủ']++;
-    else if (arrR >= 50) buckets['Đang nhập']++;
-    else if (arrR >= 20) buckets['Chú ý']++;
-    else buckets['Rủi ro']++;
-  });
-
+  // Status buckets (3 mức)
+  const buckets = statusBuckets(rows, r => r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0);
   if (mprStatusChart) mprStatusChart.destroy();
-  mprStatusChart = new Chart(document.getElementById('chart-mpr-status'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(buckets),
-      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 14, padding: 8 } },
-        datalabels: {
-          color: '#fff', font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v) => v > 0 ? v : ''
-        },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} MPR (${p}%)`; } } }
-      },
-      cutout: '58%'
-    }
-  });
+  mprStatusChart = statusDoughnut('chart-mpr-status', buckets, 'MPR');
 }
 
 function renderMPR() {
@@ -1974,23 +2156,22 @@ function renderMPR() {
   const tbody = document.getElementById('tbody-mpr');
   tbody.innerHTML = '';
 
-  let done = 0, processing = 0, notPur = 0;
+  let risk = 0;
   const totKL = rows.reduce((a, r) => ({
     mpr: a.mpr + r.mpr_w, pur: a.pur + r.pur, arr: a.arr + r.arr, inv: a.inv + r.inv
   }), { mpr:0, pur:0, arr:0, inv:0 });
   const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
   rows.forEach(r => {
     const arrR = r.mpr_w ? ((r.arr + r.inv) / r.mpr_w * 100) : 0;
-    if (arrR >= 98) done++;
-    else if (arrR > 0) processing++;
-    if (r.pur === 0) notPur++;
+    if (matStatus(arrR, r.eta) === 'Rủi ro') risk++;
   });
+  const arrPct = totKL.mpr ? ((totKL.arr + totKL.inv) / totKL.mpr * 100) : 0;
 
   document.getElementById('mpr-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng KL nhánh MPR</div>
+      <div class="metric-label">Tổng KL MPR</div>
       <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+      <div class="metric-sub">Nhu cầu vật tư của nhánh MPR</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Tổng số MPR</div>
@@ -1998,19 +2179,19 @@ function renderMPR() {
       <div class="metric-sub">MPR duy nhất</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">MPR đã đủ hàng</div>
-      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
-      <div class="metric-sub">% Arr ≥ 98%</div>
+      <div class="metric-label">Arrived</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt(totKL.arr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${arrPct.toFixed(2)}% so với MPR (gồm Inventory)</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">MPR đang xử lý</div>
-      <div><span class="metric-value" style="color:var(--warning)">${processing}</span></div>
-      <div class="metric-sub">Partial arrival</div>
+      <div class="metric-label">Balance</div>
+      <div><span class="metric-value" style="color:var(--danger)">${fmt(totBal)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR − Arrived − Inventory</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">MPR chưa mua</div>
-      <div><span class="metric-value" style="color:var(--danger)">${notPur}</span></div>
-      <div class="metric-sub">Purchased = 0</div>
+      <div class="metric-label">MPR rủi ro</div>
+      <div><span class="metric-value" style="color:var(--danger)">${risk}</span></div>
+      <div class="metric-sub">Chưa đủ 98% · ETA Update &lt; 15 ngày</div>
     </div>
   `;
 
@@ -2036,7 +2217,7 @@ function renderMPR() {
         <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
-        <td>${statusPill(arrR)}</td>
+        <td>${statusPill(arrR, r.eta)}</td>
       </tr>
     `);
   });
@@ -2044,7 +2225,7 @@ function renderMPR() {
 }
 
 /* =============== MATERIAL STATUS: MATERIAL TYPE =============== */
-let matTopChart = null, matSourceChart = null;
+let matTopChart = null, matStatusChart = null;
 
 function renderMatCharts(rows) {
   // Top 8 by MPR weight — KPI-fill style: Arrived (xanh, thực tế) + Balance (xám, còn thiếu) = MPR
@@ -2093,44 +2274,28 @@ function renderMatCharts(rows) {
   });
   renderHBarAxis('chart-mat-top-axis', matTopMax, matTopDatasets, true);
 
-  // Import (has usd) vs Domestic (has vnd) by weight
+  // Status buckets (3 mức)
+  const buckets = statusBuckets(rows, r => r.mpr ? (r.arr / r.mpr * 100) : 0);
+  if (matStatusChart) matStatusChart.destroy();
+  matStatusChart = statusDoughnut('chart-mat-status', buckets, 'nhóm VT');
+
+  // Ghi chú cơ cấu nguồn cung (Import / Domestic) — giữ lại thông tin cũ dưới dạng text
   const impRows = rows.filter(r => r.usd > 0);
   const domRows = rows.filter(r => r.vnd > 0);
   const impWeight = impRows.reduce((s, r) => s + r.mpr, 0);
   const domWeight = domRows.reduce((s, r) => s + r.mpr, 0);
   const impUsd = impRows.reduce((s, r) => s + r.usd, 0);
   const domVnd = domRows.reduce((s, r) => s + r.vnd, 0);
-
-  if (matSourceChart) matSourceChart.destroy();
-  matSourceChart = new Chart(document.getElementById('chart-mat-source'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Import', 'Domestic'],
-      datasets: [{ data: [impWeight, domWeight], backgroundColor: ['#0054a6', '#2fb344'], borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        datalabels: {
-          color: '#fff',
-          font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v, ctx) => {
-            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
-            return v > 0 ? fmtC(v) : '';
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => ` ${c.label}: ${fmt(c.raw)} Tấn`,
-            afterLabel: c => c.dataIndex === 0 ? ` → $${fmt(impUsd)} USD` : ` → ${(domVnd/1e9).toFixed(2)} tỷ VND`
-          }
-        }
-      },
-      cutout: '58%'
-    }
-  });
+  const note = document.getElementById('mat-source-note');
+  if (note) note.innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#0054a6;margin-right:6px;"></span>Import</span>
+      <span><b style="color:var(--text)">${fmt(impWeight)}</b> Tấn · $${fmt(impUsd)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between;">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2fb344;margin-right:6px;"></span>Domestic</span>
+      <span><b style="color:var(--text)">${fmt(domWeight)}</b> Tấn · ${(domVnd/1e9).toFixed(2)} tỷ VND</span>
+    </div>`;
 }
 
 function renderMat() {
@@ -2140,36 +2305,40 @@ function renderMat() {
 
   const totalUsd = rows.reduce((s, r) => s + r.usd, 0);
   const totalVnd = rows.reduce((s, r) => s + r.vnd, 0);
-  const heaviest = rows.reduce((m, r) => (!m || r.mpr > m.mpr) ? r : m, null);
-  const heaviestPct = heaviest && rows.length ? (heaviest.mpr / rows.reduce((s,r)=>s+r.mpr,0) * 100) : 0;
   const totKL = rows.reduce((a, r) => ({ mpr: a.mpr + r.mpr, arr: a.arr + r.arr }), { mpr:0, arr:0 });
   const totBal = Math.max(0, totKL.mpr - totKL.arr);
+  const arrPct = totKL.mpr ? (totKL.arr / totKL.mpr * 100) : 0;
 
   document.getElementById('mat-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng KL nhánh Vật tư</div>
+      <div class="metric-label">Tổng KL MPR</div>
       <div><span class="metric-value">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">MPR · Arrived ${fmt(totKL.arr)} · Balance ${fmt(totBal)}</div>
+      <div class="metric-sub">Nhu cầu vật tư của nhánh Loại VT</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Số nhóm vật tư</div>
       <div><span class="metric-value">${rows.length}</span></div>
       <div class="metric-sub">Theo Code + Description</div>
     </div>
+    <div class="metric-card">
+      <div class="metric-label">Arrived</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt(totKL.arr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${arrPct.toFixed(2)}% so với MPR</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Balance</div>
+      <div><span class="metric-value" style="color:var(--danger)">${fmt(totBal)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">MPR − Arrived</div>
+    </div>
     <div class="metric-card info-box info-success">
       <div class="metric-label">Tổng amount (VND)</div>
       <div><span class="metric-value">${(totalVnd/1e9).toLocaleString('vi-VN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><span class="metric-unit">tỷ VND</span></div>
-      <div class="metric-sub">Purchased Domestic</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Loại vật tư nặng nhất</div>
-      <div><span class="metric-value" style="font-size:18px">${heaviest ? heaviest.desc.substring(0,18) : '—'}</span></div>
-      <div class="metric-sub">${heaviest ? `${fmt(heaviest.mpr)} Tấn · ${heaviestPct.toFixed(2)}%` : ''}</div>
+      <div class="metric-sub">Purchased Domestic · $${fmt(totalUsd)} Import</div>
     </div>
   `;
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Không có dữ liệu.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Không có dữ liệu.</td></tr>`;
     renderMatCharts(rows);
     return;
   }
@@ -2192,6 +2361,7 @@ function renderMat() {
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
         <td class="num">${usdCell}</td>
         <td class="num">${vndCell}</td>
+        <td>${statusPill(arrR, r.eta)}</td>
       </tr>
     `);
   });
@@ -2234,41 +2404,10 @@ function renderPOCharts(rows) {
   });
   renderHBarAxis('chart-po-top-axis', poTopMax, poTopDatasets, false);
 
-  // Status buckets
-  const buckets = { 'Đủ': 0, 'Đang nhập': 0, 'Chú ý': 0, 'Rủi ro': 0 };
-  const colors = ['#2fb344', '#4299e1', '#f7a531', '#d63939'];
-  rows.forEach(r => {
-    const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 98) buckets['Đủ']++;
-    else if (arrR >= 50) buckets['Đang nhập']++;
-    else if (arrR >= 20) buckets['Chú ý']++;
-    else buckets['Rủi ro']++;
-  });
-
+  // Status buckets (3 mức)
+  const buckets = statusBuckets(rows, r => r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0);
   if (poStatusChart) poStatusChart.destroy();
-  poStatusChart = new Chart(document.getElementById('chart-po-status'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(buckets),
-      datasets: [{ data: Object.values(buckets), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        datalabels: {
-          color: '#fff', font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v, ctx) => {
-            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
-            return v > 0 ? v : '';
-          }
-        },
-        tooltip: { callbacks: { label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} PO (${p}%)`; } } }
-      },
-      cutout: '58%'
-    }
-  });
+  poStatusChart = statusDoughnut('chart-po-status', buckets, 'PO');
 }
 
 function renderPO() {
@@ -2281,19 +2420,18 @@ function renderPO() {
   }), { po_w:0, mpr:0, pur:0, arr:0, inv:0 });
   const totBal = Math.max(0, totKL.mpr - totKL.arr - totKL.inv);
 
-  let done = 0, processing = 0, notArr = 0;
+  let risk = 0;
   rows.forEach(r => {
     const arrR = r.mpr ? ((r.arr + r.inv) / r.mpr * 100) : 0;
-    if (arrR >= 98) done++;
-    else if (arrR > 0) processing++;
-    if (r.arr === 0) notArr++;
+    if (matStatus(arrR, r.eta) === 'Rủi ro') risk++;
   });
+  const arrPct = totKL.mpr ? ((totKL.arr + totKL.inv) / totKL.mpr * 100) : 0;
 
   document.getElementById('po-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng KL nhánh PO</div>
+      <div class="metric-label">PO Weight</div>
       <div><span class="metric-value">${fmt(totKL.po_w)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">PO Weight · MPR ${fmt(totKL.mpr)} · Arrived ${fmt(totKL.arr)}</div>
+      <div class="metric-sub">Khối lượng đã đặt hàng</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Tổng số PO</div>
@@ -2301,19 +2439,19 @@ function renderPO() {
       <div class="metric-sub">PO đang tracking</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">PO hoàn thành</div>
-      <div><span class="metric-value" style="color:var(--success)">${done}</span></div>
-      <div class="metric-sub">% Arr ≥ 98%</div>
+      <div class="metric-label">MPR</div>
+      <div><span class="metric-value" style="color:var(--info)">${fmt(totKL.mpr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">Nhu cầu gộp của các PO · Balance ${fmt(totBal)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">PO đang xử lý</div>
-      <div><span class="metric-value" style="color:var(--warning)">${processing}</span></div>
-      <div class="metric-sub">Partial arrival</div>
+      <div class="metric-label">Arrived</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt(totKL.arr)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${arrPct.toFixed(2)}% so với MPR (gồm Inventory)</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">PO chưa nhập hàng</div>
-      <div><span class="metric-value" style="color:var(--danger)">${notArr}</span></div>
-      <div class="metric-sub">Arrived = 0</div>
+      <div class="metric-label">PO rủi ro</div>
+      <div><span class="metric-value" style="color:var(--danger)">${risk}</span></div>
+      <div class="metric-sub">Chưa đủ 98% · ETA Update &lt; 15 ngày</div>
     </div>
   `;
 
@@ -2340,7 +2478,7 @@ function renderPO() {
         <td class="num">${purR.toFixed(2)}%</td>
         <td class="num">${pbar(arrR)}</td>
         <td class="num" style="color:var(--danger); font-weight:600">${fmt(bal)}</td>
-        <td>${statusPill(arrR)}</td>
+        <td>${statusPill(arrR, r.eta)}</td>
       </tr>
     `);
   });
@@ -2348,12 +2486,6 @@ function renderPO() {
 }
 
 /* =============== LOGISTIC =============== */
-const TODAY = new Date('2026-08-28');  // giả lập ngày hôm nay (khớp report cập nhật)
-const DAY_MS = 86400000;
-const parseD = s => (s === '—' || !s) ? null : new Date(s);
-const daysTo = s => { const d = parseD(s); return d ? Math.round((d - TODAY) / DAY_MS) : null; };
-const fmtD = s => s || '—';
-
 let lgTransport = 'ALL';
 function filterLogistic() {
   return logisticData.filter(r =>
@@ -2362,7 +2494,9 @@ function filterLogistic() {
   );
 }
 
-let lgPipelineChart = null, lgTransportChart = null, lgTimelineChart = null, lgSupChart = null, lgStatusChart = null;
+let lgTimelineChart = null, lgSupChart = null, lgDelayChart = null;
+let exMonthChart = null, exProjChart = null, exItemChart = null, exStatusChart = null;
+let lgTableMode = 'in';
 
 function renderLogistic() {
   const rows = filterLogistic();
@@ -2385,32 +2519,22 @@ function renderLogistic() {
   // Storage sắp hết hạn (5 ngày tới, chưa arrival)
   const storageSoon = rows.filter(r => !r.actual_arrival && r.storage_due !== '—' && daysTo(r.storage_due) !== null && daysTo(r.storage_due) >= 0 && daysTo(r.storage_due) <= 5);
 
-  // ----- KPI Row 1: pipeline -----
+  // ----- KPI Row 1: nhập -----
   document.getElementById('lg-kpis-pipeline').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng KL tracking</div>
+      <div class="metric-label">📥 Tổng KL nhập tracking</div>
       <div><span class="metric-value">${fmt1(totalQty)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">${rows.length} shipment</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">🚢 Đang trên biển / đường</div>
-      <div><span class="metric-value" style="color:var(--info)">${fmt1(onBoat)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">${rows.filter(r=>r.status==='ON_BOAT').length} shipment · On Boat</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">🏭 Đang tồn ở port</div>
-      <div><span class="metric-value" style="color:var(--warning)">${fmt1(atPort)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">${rows.filter(r=>r.status==='AT_PORT').length} shipment · Chờ dispatch</div>
+      <div class="metric-sub">${rows.length} shipment đang theo dõi</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">✅ Đã về Amecc</div>
       <div><span class="metric-value" style="color:var(--success)">${fmt1(atAmecc)}</span><span class="metric-unit">Tấn</span></div>
       <div class="metric-sub">${rows.filter(r=>r.status==='AT_AMECC').length} shipment · Completed</div>
     </div>
-    <div class="metric-card">
-      <div class="metric-label">📋 Chờ xuất</div>
-      <div><span class="metric-value" style="color:var(--muted)">${fmt1(pending)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">${rows.filter(r=>r.status==='PENDING').length} shipment · Pending ETD</div>
+    <div class="metric-card info-box info-success">
+      <div class="metric-label">📊 Tỷ lệ đã về Amecc</div>
+      <div><span class="metric-value">${totalQty ? (atAmecc/totalQty*100).toFixed(2) : '0.00'}</span><span class="metric-unit">%</span></div>
+      <div class="metric-sub">${fmt1(atAmecc)} / ${fmt1(totalQty)} Tấn</div>
     </div>
   `;
 
@@ -2426,120 +2550,24 @@ function renderLogistic() {
       <div><span class="metric-value" style="color:var(--warning)">${storageSoon.length}</span><span class="metric-unit">shipment</span></div>
       <div class="metric-sub">Sắp hết hạn — cần lấy hàng gấp</div>
     </div>
-    <div class="metric-card" style="border-left:4px solid var(--success);">
-      <div class="metric-label" style="color:var(--success);">🔔 Về Amecc trong 7 ngày</div>
-      <div><span class="metric-value" style="color:var(--success)">${soonArrival.length}</span><span class="metric-unit">shipment</span></div>
-      <div class="metric-sub">${fmt1(soonQty)} Tấn · Chuẩn bị nhân lực xưởng</div>
-    </div>
-    <div class="metric-card" style="border-left:4px solid var(--info);">
-      <div class="metric-label" style="color:var(--info);">📊 Tỷ lệ đã về Amecc</div>
-      <div><span class="metric-value" style="color:var(--info)">${totalQty ? (atAmecc/totalQty*100).toFixed(2) : 0}</span><span class="metric-unit">%</span></div>
-      <div class="metric-sub">${fmt1(atAmecc)} / ${fmt1(totalQty)} Tấn</div>
-    </div>
   `;
 
   renderLogisticCharts(rows, { totalQty, onBoat, atPort, atAmecc, pending });
   renderLogisticAlertTable(rows);
+  renderExport();
+}
+
+/* ---- Lô nhập bị chậm: so với Plan ETA Update (fallback plan_arrival) ---- */
+const etaUpdateOf = r => r.eta_update || r.plan_arrival;
+function isLateShipment(r) {
+  const t = etaUpdateOf(r);
+  if (!t || t === '—') return false;
+  if (r.actual_arrival) return new Date(r.actual_arrival) > new Date(t);
+  return (daysTo(t) !== null && daysTo(t) < 0);
 }
 
 function renderLogisticCharts(rows, agg) {
-  // ===== CHART 1: Pipeline waterfall =====
-  // Total → After OnBoat leaves → After AtPort leaves → AtAmecc
-  const totalTracked = agg.totalQty - agg.pending;  // exclude pending (chưa vào pipeline)
-  const afterOnBoat  = totalTracked - agg.onBoat;
-  const afterAtPort  = afterOnBoat - agg.atPort;
-  const wf = [
-    { label: 'Total tracking',  range: [0, totalTracked], type:'total',   value: totalTracked, color:'#0054a6' },
-    { label: 'On Boat',         range: [afterOnBoat, totalTracked], type:'decrease', value: afterOnBoat, color:'#f7a531', delta: agg.onBoat },
-    { label: 'At Port',         range: [afterAtPort, afterOnBoat],  type:'decrease', value: afterAtPort, color:'#f7a531', delta: agg.atPort },
-    { label: 'At Amecc',        range: [0, agg.atAmecc], type:'total', value: agg.atAmecc, color:'#2fb344' },
-  ];
-  if (lgPipelineChart) lgPipelineChart.destroy();
-  const ctxP = document.getElementById('chart-lg-pipeline');
-  lgPipelineChart = new Chart(ctxP, {
-    type: 'bar',
-    data: {
-      labels: wf.map(b => b.label),
-      datasets: [{ data: wf.map(b => b.range), backgroundColor: wf.map(b => b.color), borderRadius: 4, borderSkipped:false, barPercentage:0.55 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        datalabels: { display: false },
-        tooltip: {
-          callbacks: {
-            label: c => {
-              const b = wf[c.dataIndex];
-              return b.type === 'total' ? ` ${b.label}: ${fmt1(b.value)} Tấn` : ` ${b.label}: -${fmt1(b.delta)} Tấn`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { grid:{display:false}, ticks:{font:{size:11, weight:600}} },
-        y: { beginAtZero:true, ticks:{callback:v=>fmt(v), font:{size:10}}, grid:{color:'#f1f5f9'} }
-      }
-    },
-    plugins: [{
-      id:'wfLbl',
-      afterDatasetsDraw(ch) {
-        const meta = ch.getDatasetMeta(0);
-        const { ctx, scales:{y} } = ch;
-        ctx.save(); ctx.textAlign='center';
-        meta.data.forEach((bar,i) => {
-          const b = wf[i];
-          const topY = Math.min(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
-          const btmY = Math.max(y.getPixelForValue(b.range[0]), y.getPixelForValue(b.range[1]));
-          if (b.type==='total') {
-            ctx.fillStyle='#1d273b'; ctx.font='700 12px sans-serif';
-            ctx.fillText(fmt1(b.value), bar.x, topY-6);
-          } else if (b.delta > 0) {
-            const label = `−${fmt1(b.delta)}`;
-            if ((btmY-topY) > 22) {
-              ctx.fillStyle='#fff'; ctx.font='700 12px sans-serif';
-              ctx.fillText(label, bar.x, (topY+btmY)/2 + 4);
-            } else {
-              ctx.fillStyle='#f7a531'; ctx.font='700 12px sans-serif';
-              ctx.fillText(label, bar.x, topY-6);
-            }
-          }
-        });
-        ctx.restore();
-      }
-    }]
-  });
-
-  // ===== CHART 2: Transport doughnut =====
-  const bySea = rows.filter(r=>r.transport==='SEA').reduce((s,r)=>s+r.qty,0);
-  const byAir = rows.filter(r=>r.transport==='AIR').reduce((s,r)=>s+r.qty,0);
-  const byTruck = rows.filter(r=>r.transport==='TRUCK').reduce((s,r)=>s+r.qty,0);
-  if (lgTransportChart) lgTransportChart.destroy();
-  lgTransportChart = new Chart(document.getElementById('chart-lg-transport'), {
-    type:'doughnut',
-    data:{
-      labels:['🚢 SEA','✈️ AIR','🚚 TRUCK'],
-      datasets:[{ data:[bySea, byAir, byTruck], backgroundColor:['#0054a6','#f7a531','#2fb344'], borderWidth:2, borderColor:'#fff' }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
-        datalabels: {
-          color: '#fff', font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v) => {
-            const total = bySea + byAir + byTruck;
-            return v > 0 ? fmtC(v) : '';
-          }
-        },
-        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt1(c.raw)} Tấn (${(c.raw/(bySea+byAir+byTruck)*100).toFixed(2)}%)` } }
-      },
-      cutout:'58%'
-    }
-  });
-
-  // ===== CHART 3: Timeline 30 days =====
+  // ===== CHART 1: Timeline 30 ngày tới =====
   const timelineBuckets = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(TODAY.getTime() + i * DAY_MS);
@@ -2589,67 +2617,100 @@ function renderLogisticCharts(rows, agg) {
     }
   });
 
-  // ===== CHART 4: Top supplier by in-transit weight =====
+  // ===== CHART 2: Tổng Nhập theo NCC (đã về Amecc vs đang về) =====
   const supMap = {};
-  rows.filter(r => r.status !== 'AT_AMECC').forEach(r => {
-    supMap[r.sup] = (supMap[r.sup] || 0) + r.qty;
+  rows.forEach(r => {
+    if (!supMap[r.sup]) supMap[r.sup] = { arrived: 0, intransit: 0 };
+    if (r.status === 'AT_AMECC') supMap[r.sup].arrived += r.qty;
+    else supMap[r.sup].intransit += r.qty;
   });
-  const supTop = Object.entries(supMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  const supTop = Object.entries(supMap)
+    .map(([k, v]) => ({ sup: k, ...v, total: v.arrived + v.intransit }))
+    .sort((a, b) => b.total - a.total).slice(0, 8);
+
   if (lgSupChart) lgSupChart.destroy();
   setHBarHeight('chart-lg-supplier', Math.max(3, supTop.length));
-  const lgSupDatasets = [{ label: 'KL', data: supTop.map(s => s[1]), backgroundColor:'#0054a6', borderRadius:3, barPercentage: 0.9, categoryPercentage: 0.85 }];
-  const lgSupMax = computeMaxX(lgSupDatasets, false);
+  const lgSupDatasets = [
+    { label: 'Đã về Amecc', data: supTop.map(r => r.arrived),   backgroundColor: '#2fb344', borderRadius: { topLeft: 3, bottomLeft: 3 }, stack: 'in', barPercentage: 0.9, categoryPercentage: 0.85 },
+    { label: 'Đang về / chờ xuất', data: supTop.map(r => r.intransit), backgroundColor: '#cbd5e1', borderRadius: { topRight: 3, bottomRight: 3 }, stack: 'in', barPercentage: 0.9, categoryPercentage: 0.85 },
+  ];
+  const lgSupMax = computeMaxX(lgSupDatasets, true);
   lgSupChart = new Chart(document.getElementById('chart-lg-supplier'), {
-    type:'bar',
-    data:{ labels: supTop.map(s => s[0]), datasets: lgSupDatasets },
-    options:{
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
+    type: 'bar',
+    data: { labels: supTop.map(r => r.sup), datasets: lgSupDatasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
         datalabels: {
-          color: '#1d273b', font: { size: 12, weight: '700' },
-          anchor: 'end', align: 'right', offset: 4,
-          formatter: (v) => fmtC(v)
+          color: (c) => c.datasetIndex === 0 ? '#fff' : '#475569',
+          font: { size: 12, weight: '700' }, anchor: 'center', align: 'center',
+          formatter: (v) => v > 0 ? fmtC(v) : ''
         },
-        tooltip:{callbacks:{label: c => ` ${fmt1(c.raw)} Tấn`}}
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn`,
+            afterBody: (items) => `\nTổng nhập: ${fmt1(supTop[items[0].dataIndex].total)} Tấn`
+          }
+        }
       },
-      scales:{
-        x:{display:false, beginAtZero:true, max: lgSupMax},
-        y:{grid:{display:false}, ticks:{font:{size:12}}, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; }}
+      scales: {
+        x: { display: false, stacked: true, beginAtZero: true, max: lgSupMax },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
       }
     }
   });
-  renderHBarAxis('chart-lg-supplier-axis', lgSupMax, lgSupDatasets, false);
+  renderHBarAxis('chart-lg-supplier-axis', lgSupMax, lgSupDatasets, true);
 
-  // ===== CHART 5: Status distribution =====
-  if (lgStatusChart) lgStatusChart.destroy();
-  const statusMap = {
-    'PENDING':  rows.filter(r => r.status === 'PENDING').length,
-    'ON_BOAT':  rows.filter(r => r.status === 'ON_BOAT').length,
-    'AT_PORT':  rows.filter(r => r.status === 'AT_PORT').length,
-    'AT_AMECC': rows.filter(r => r.status === 'AT_AMECC').length,
-  };
-  lgStatusChart = new Chart(document.getElementById('chart-lg-status'), {
-    type:'polarArea',
-    data:{
-      labels:['📋 Pending','🚢 On Boat','🏭 At Port','✅ At Amecc'],
-      datasets:[{ data:[statusMap.PENDING, statusMap.ON_BOAT, statusMap.AT_PORT, statusMap.AT_AMECC],
-        backgroundColor:['#94a3b8cc','#4299e1cc','#f7a531cc','#2fb344cc'], borderWidth:2, borderColor:'#fff' }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'bottom', labels:{font:{size:11}, boxWidth:12, padding:8}},
+  // ===== CHART 3: NCC có tỷ lệ giao chậm cao (so với Plan ETA Update) =====
+  const dlMap = {};
+  rows.forEach(r => {
+    if (!dlMap[r.sup]) dlMap[r.sup] = { late: 0, total: 0 };
+    dlMap[r.sup].total++;
+    if (isLateShipment(r)) dlMap[r.sup].late++;
+  });
+  const dlTop = Object.entries(dlMap)
+    .map(([k, v]) => ({ sup: k, ...v, pct: v.total ? v.late / v.total * 100 : 0 }))
+    .filter(r => r.late > 0)
+    .sort((a, b) => b.pct - a.pct || b.late - a.late).slice(0, 8);
+
+  if (lgDelayChart) lgDelayChart.destroy();
+  setHBarHeight('chart-lg-delay', Math.max(3, dlTop.length));
+  const lgDelayDatasets = [{
+    label: '% lô trễ',
+    data: dlTop.map(r => Number(r.pct.toFixed(2))),
+    backgroundColor: dlTop.map(r => r.pct >= 50 ? '#d63939' : (r.pct >= 25 ? '#f7a531' : '#4299e1')),
+    borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85
+  }];
+  lgDelayChart = new Chart(document.getElementById('chart-lg-delay'), {
+    type: 'bar',
+    data: { labels: dlTop.map(r => r.sup), datasets: lgDelayDatasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
         datalabels: {
-          color: '#fff', font: { size: 14, weight: '700' },
-          anchor: 'center', align: 'center',
-          formatter: (v) => v > 0 ? v : ''
+          color: '#1d273b', font: { size: 12, weight: '700' },
+          anchor: 'end', align: 'right', offset: 4,
+          formatter: (v) => v > 0 ? v.toFixed(2) + '%' : ''
         },
-        tooltip:{ callbacks:{ label: c => { const t=c.dataset.data.reduce((a,b)=>a+b,0); const p=t?(c.raw/t*100).toFixed(2):0; return ` ${c.label}: ${c.raw} shipment (${p}%)`; } } }
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.raw.toFixed(2)}% trễ`,
+            afterBody: (items) => {
+              const r = dlTop[items[0].dataIndex];
+              return `\n${r.late}/${r.total} lô trễ so với Plan ETA Update`;
+            }
+          }
+        }
       },
-      scales:{r:{ticks:{font:{size:9}}, grid:{color:'#e2e8f0'}}}
+      scales: {
+        x: { display: false, beginAtZero: true, max: 100 },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
+      }
     }
   });
+  renderHBarAxis('chart-lg-delay-axis', 100, lgDelayDatasets, false);
 }
 
 function renderLogisticAlertTable(rows) {
@@ -2708,13 +2769,290 @@ function renderLogisticAlertTable(rows) {
         <td style="font-size:12px;">${fmtD(r.etd)}</td>
         <td style="font-size:12px;">${fmtD(r.eta)}</td>
         <td style="font-size:12px;">${fmtD(r.storage_due)}</td>
-        <td style="font-size:12px;">${fmtD(r.plan_arrival)}</td>
+        <td style="font-size:12px;">${fmtD(etaUpdateOf(r))}${isLateShipment(r) ? ' <span style="color:var(--danger);font-weight:700;">⚠</span>' : ''}</td>
         <td>${statusPillLg(r)}</td>
         <td class="num">${daysDisplay(r)}</td>
       </tr>
     `);
   });
 }
+
+/* =============== XUẤT NVL =============== */
+const MODE_GROUP = { FCL: 'SEA', LCL: 'SEA', BV: 'SEA', AIR: 'AIR', XETAI: 'TRUCK' };
+const EX_ST_COLORS = { 'Hoàn tất': '#2fb344', 'Đang thực hiện': '#4299e1', 'Muộn': '#d63939' };
+const EX_ST_ORDER  = ['Hoàn tất', 'Đang thực hiện', 'Muộn'];
+
+/* Trạng thái lô xuất — "muộn" xác định bằng ETA:
+   DONE → Hoàn tất; chưa DONE mà đã quá ETA → Muộn; còn lại → Đang thực hiện */
+function exStatus(r) {
+  if (r.st === 'DONE') return 'Hoàn tất';
+  if (r.eta && daysTo(r.eta) !== null && daysTo(r.eta) < 0) return 'Muộn';
+  return 'Đang thực hiện';
+}
+
+function filterExport() {
+  return exportData.filter(r =>
+    (currentProject === 'ALL' || r.proj === currentProject) &&
+    (lgTransport === 'ALL' || MODE_GROUP[r.mode] === lgTransport)
+  );
+}
+const monthKey = d => d ? d.slice(0, 7) : '';
+
+function renderExport() {
+  const rows = filterExport();
+  const shipped = rows.filter(r => r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0);
+  const totCtr  = rows.reduce((a, r) => a + (r.qty || 0), 0);
+  const totTon  = rows.reduce((a, r) => a + (r.gw || 0), 0) / 1000;
+  const late    = rows.filter(r => exStatus(r) === 'Muộn');
+  const done    = rows.filter(r => exStatus(r) === 'Hoàn tất');
+  const donePct = rows.length ? (done.length / rows.length * 100) : 0;
+
+  document.getElementById('ex-kpis').innerHTML = `
+    <div class="metric-card info-box info-primary">
+      <div class="metric-label">Tổng lô xuất</div>
+      <div><span class="metric-value">${rows.length}</span><span class="metric-unit">lô</span></div>
+      <div class="metric-sub">${shipped.length} đã ETD · ${rows.length - shipped.length} kế hoạch / chưa có ETD</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tổng container</div>
+      <div><span class="metric-value" style="color:var(--info)">${fmt(totCtr)}</span><span class="metric-unit">CTR</span></div>
+      <div class="metric-sub">Hàng FCL / LCL</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Khối lượng xuất</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt1(totTon)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">Chỉ hàng rời (BV) / AIR / xe tải — FCL không có GW</div>
+    </div>
+    <div class="metric-card" style="border-left:4px solid var(--danger);">
+      <div class="metric-label" style="color:var(--danger);">🚨 Lô muộn</div>
+      <div><span class="metric-value" style="color:var(--danger)">${late.length}</span><span class="metric-unit">lô</span></div>
+      <div class="metric-sub">Đã quá ETA mà chưa hoàn tất</div>
+    </div>
+    <div class="metric-card info-box info-success">
+      <div class="metric-label">Tỷ lệ hoàn tất</div>
+      <div><span class="metric-value">${donePct.toFixed(2)}</span><span class="metric-unit">%</span></div>
+      <div class="metric-sub">${done.length} / ${rows.length} lô đã DONE</div>
+    </div>
+  `;
+
+  renderExportCharts(rows);
+  renderExportTable(rows);
+}
+
+function renderExportCharts(rows) {
+  // ===== CHART 1: Sản lượng xuất theo tháng (CTR + số lô) =====
+  const months = [...new Set(rows.map(r => monthKey(r.etd)).filter(Boolean))].sort();
+  const ctrByM = months.map(m => rows.filter(r => monthKey(r.etd) === m).reduce((a, r) => a + (r.qty || 0), 0));
+  const lotByM = months.map(m => rows.filter(r => monthKey(r.etd) === m).length);
+  const mLabel = months.map(m => { const [y, mm] = m.split('-'); return `T${Number(mm)}/${y.slice(2)}`; });
+
+  if (exMonthChart) exMonthChart.destroy();
+  exMonthChart = new Chart(document.getElementById('chart-ex-month'), {
+    data: {
+      labels: mLabel,
+      datasets: [
+        { type: 'bar',  label: 'Container (CTR)', data: ctrByM, backgroundColor: '#0054a6', borderRadius: 4, yAxisID: 'y', order: 2 },
+        { type: 'line', label: 'Số lô xuất', data: lotByM, borderColor: '#f7a531', backgroundColor: '#f7a531',
+          borderWidth: 3, tension: 0.3, pointRadius: 4, yAxisID: 'y1', order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        datalabels: {
+          color: (c) => c.datasetIndex === 0 ? '#1d273b' : '#b45309',
+          font: { size: 11, weight: '700' }, anchor: 'end', align: 'end', offset: 2,
+          formatter: (v) => v > 0 ? v : ''
+        },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.raw)}` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y:  { beginAtZero: true, position: 'left',  grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, title: { display: true, text: 'CTR', font: { size: 11 } } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false },   ticks: { font: { size: 10 } }, title: { display: true, text: 'Số lô', font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ===== CHART 2: Trạng thái theo dự án =====
+  const pMap = {};
+  rows.forEach(r => {
+    if (!pMap[r.proj]) pMap[r.proj] = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0, ctr: 0, ton: 0, lot: 0 };
+    pMap[r.proj][exStatus(r)]++;
+    pMap[r.proj].ctr += (r.qty || 0);
+    pMap[r.proj].ton += (r.gw || 0) / 1000;
+    pMap[r.proj].lot++;
+  });
+  const pTop = Object.entries(pMap).map(([k, v]) => ({ proj: k, ...v }))
+    .sort((a, b) => b.lot - a.lot || b.ctr - a.ctr).slice(0, 10);
+
+  if (exProjChart) exProjChart.destroy();
+  setHBarHeight('chart-ex-proj', Math.max(3, pTop.length));
+  const exProjDatasets = EX_ST_ORDER.map((k, i) => ({
+    label: k, data: pTop.map(r => r[k]), backgroundColor: EX_ST_COLORS[k], stack: 'st',
+    borderRadius: i === 0 ? { topLeft: 3, bottomLeft: 3 } : (i === EX_ST_ORDER.length - 1 ? { topRight: 3, bottomRight: 3 } : 0),
+    barPercentage: 0.9, categoryPercentage: 0.85
+  }));
+  const exProjMax = computeMaxX(exProjDatasets, true);
+  exProjChart = new Chart(document.getElementById('chart-ex-proj'), {
+    type: 'bar',
+    data: { labels: pTop.map(r => r.proj), datasets: exProjDatasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? v : '' },
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.dataset.label}: ${c.raw} lô`,
+            afterBody: (items) => {
+              const r = pTop[items[0].dataIndex];
+              return `\nTổng ${r.lot} lô · ${fmt(r.ctr)} CTR · ${fmt1(r.ton)} Tấn`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { display: false, stacked: true, beginAtZero: true, max: exProjMax },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 12, family: 'monospace' } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
+      }
+    }
+  });
+  renderHBarAxis('chart-ex-proj-axis', exProjMax, exProjDatasets, true);
+
+  // ===== CHART 3: Cơ cấu nguyên vật liệu =====
+  const iMap = {};
+  rows.forEach(r => {
+    const k = r.item || '(Chưa phân loại)';
+    if (!iMap[k]) iMap[k] = { lot: 0, ctr: 0, ton: 0 };
+    iMap[k].lot++; iMap[k].ctr += (r.qty || 0); iMap[k].ton += (r.gw || 0) / 1000;
+  });
+  const iTop = Object.entries(iMap).map(([k, v]) => ({ item: k, ...v })).sort((a, b) => b.lot - a.lot).slice(0, 8);
+
+  if (exItemChart) exItemChart.destroy();
+  setHBarHeight('chart-ex-item', Math.max(3, iTop.length));
+  const exItemDatasets = [{ label: 'Số lô', data: iTop.map(r => r.lot), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const exItemMax = computeMaxX(exItemDatasets, false);
+  exItemChart = new Chart(document.getElementById('chart-ex-item'), {
+    type: 'bar',
+    data: { labels: iTop.map(r => r.item), datasets: exItemDatasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? v : '' },
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.raw} lô xuất`,
+            afterBody: (items) => {
+              const r = iTop[items[0].dataIndex];
+              return `\n${fmt(r.ctr)} container · ${fmt1(r.ton)} Tấn`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { display: false, beginAtZero: true, max: exItemMax },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
+      }
+    }
+  });
+  renderHBarAxis('chart-ex-item-axis', exItemMax, exItemDatasets, false);
+
+  // ===== CHART 4: Phân bổ trạng thái =====
+  const stMap = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0 };
+  rows.forEach(r => stMap[exStatus(r)]++);
+  if (exStatusChart) exStatusChart.destroy();
+  exStatusChart = new Chart(document.getElementById('chart-ex-status'), {
+    type: 'doughnut',
+    data: {
+      labels: EX_ST_ORDER,
+      datasets: [{ data: EX_ST_ORDER.map(k => stMap[k]), backgroundColor: EX_ST_ORDER.map(k => EX_ST_COLORS[k]), borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        datalabels: { color: '#fff', font: { size: 14, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? v : '' },
+        tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const p = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${c.label}: ${c.raw} lô (${p}%)`; } } }
+      },
+      cutout: '58%'
+    }
+  });
+}
+
+function renderExportTable(rows) {
+  const tbody = document.getElementById('tbody-ex-detail');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const sorted = [...rows].sort((a, b) => (b.etd || '').localeCompare(a.etd || ''));
+  if (sorted.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="18" class="empty-state">Không có dữ liệu xuất.</td></tr>`;
+    return;
+  }
+  const modeIcon = { FCL: '🚢 FCL', LCL: '🚢 LCL', BV: '🚢 BV', AIR: '✈️ AIR', XETAI: '🚚 Xe tải' };
+  const coPill = (v) => {
+    if (v === 'xong')  return `<span class="status-pill badge-success">Xong</span>`;
+    if (v === 'nháp')  return `<span class="status-pill badge-warning">Nháp</span>`;
+    if (v === 'chưa')  return `<span class="status-pill badge-danger">Chưa</span>`;
+    if (v === 'không') return `<span class="status-pill badge-info">Không</span>`;
+    return '<span class="cell-muted">—</span>';
+  };
+  const stPill = (r) => {
+    const st = exStatus(r);
+    const cls = st === 'Hoàn tất' ? 'badge-success' : (st === 'Muộn' ? 'badge-danger' : 'badge-info');
+    const d = r.eta ? daysTo(r.eta) : null;
+    const hint = (st === 'Muộn' && d !== null) ? ` title="Quá ETA ${fmtD(r.eta)} ${Math.abs(d)} ngày"` : '';
+    return `<span class="status-pill ${cls}"${hint}>${st}</span>`;
+  };
+  sorted.forEach((r, i) => {
+    const shipped = r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0;
+    const cdsCell = r.cds
+      ? `<span style="font-family:monospace; font-size:11px;">${r.cds}</span>`
+      : (shipped ? `<span class="status-pill badge-danger">Thiếu</span>` : '<span class="cell-muted">—</span>');
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${r.no}</td>
+        <td class="cell-project">${r.proj}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.et}</td>
+        <td>${r.item || '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${modeIcon[r.mode] || r.mode || '—'}</td>
+        <td style="font-size:12px;">${r.ctr || '<span class="cell-muted">—</span>'}</td>
+        <td class="num">${r.qty || '<span class="cell-muted">—</span>'}</td>
+        <td class="num">${r.gw ? fmt(r.gw) : '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${r.vessel || '<span class="cell-muted">—</span>'}</td>
+        <td class="cell-muted">${r.carrier || '—'}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.bill || '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${r.pol || '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${r.pod || '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${fmtD(r.etd)}</td>
+        <td style="font-size:12px;">${fmtD(r.eta)}</td>
+        <td>${cdsCell}</td>
+        <td>${coPill(r.co)}</td>
+        <td>${stPill(r)}</td>
+      </tr>
+    `);
+  });
+}
+
+/* ---- Toggle bảng chi tiết Nhập / Xuất ---- */
+document.querySelectorAll('.tbl-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tbl-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    lgTableMode = btn.dataset.tbl;
+    const isIn = lgTableMode === 'in';
+    document.getElementById('tblwrap-in').style.display  = isIn ? '' : 'none';
+    document.getElementById('tblwrap-out').style.display = isIn ? 'none' : '';
+    document.getElementById('lg-tbl-title').innerHTML = isIn
+      ? '🚨 Chi tiết Nhập — Shipment cần chú ý (Top 15)'
+      : '📤 Chi tiết Xuất — Danh sách lô xuất khẩu';
+    document.getElementById('lg-tbl-sub').innerHTML = isIn
+      ? 'Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)'
+      : 'Sắp xếp theo ETD mới nhất · Cột Tờ khai "Thiếu" = đã ETD nhưng chưa có CDs No';
+  });
+});
 
 /* =============== FILTER BADGES =============== */
 function updateBadges() {
