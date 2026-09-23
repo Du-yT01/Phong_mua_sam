@@ -896,7 +896,7 @@
       </ul>
       <p class="note">ETA Update dùng để so sánh là <b>ngày gần nhất</b> trong các dòng chưa đủ hàng của NCC / MPR / loại vật tư / PO đó.</p>
 
-      <p><b>Trang Logistic</b> gồm 2 phần: <b>📥 Nhập NVL</b> (lịch về Amecc, tổng nhập theo NCC, NCC giao chậm so với Plan ETA Update) và <b>📤 Xuất NVL</b> (sản lượng theo tháng, trạng thái theo dự án, cơ cấu nguyên vật liệu, phân bổ trạng thái — lô "Muộn" = đã quá ETA mà chưa hoàn tất). Bảng chi tiết cuối trang có nút chuyển giữa <b>Chi tiết nhập</b> và <b>Chi tiết xuất</b>.</p>
+      <p><b>Trang Logistic</b> gồm 2 phần: <b>📥 Nhập NVL</b> (lịch về Amecc, tổng nhập theo NCC, NCC giao chậm so với Plan ETA Update) và <b>📤 Xuất NVL</b> (khối lượng theo tháng, khối lượng theo dự án, cơ cấu nguyên vật liệu, phân bổ trạng thái — tất cả quy về <b>Tấn</b>; lô "Muộn" = đã quá ETA mà chưa hoàn tất). Bảng chi tiết cuối trang có nút chuyển giữa <b>Chi tiết nhập</b> và <b>Chi tiết xuất</b>.</p>
 
       <div class="mock">
         <span class="mock-label">Sub-tabs bên trong Material Status</span>
@@ -1000,8 +1000,8 @@
       <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Sản lượng xuất theo tháng</div>
-            <div class="card-sub">Cột = số container (CTR) · Đường = số lô xuất — theo ETD</div>
+            <div class="card-title">Khối lượng xuất theo tháng</div>
+            <div class="card-sub">Tấn theo ETD · Xanh đậm = KL cân thực tế (GW) · Xanh nhạt = KL ước tính từ số container</div>
           </div>
         </div>
         <div class="card-body">
@@ -1012,8 +1012,8 @@
       <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Trạng thái theo dự án</div>
-            <div class="card-sub">Số lô theo Hoàn tất / Đang thực hiện / Muộn — muộn = quá ETA mà chưa hoàn tất</div>
+            <div class="card-title">Khối lượng xuất theo dự án</div>
+            <div class="card-sub">Tấn theo Hoàn tất / Đang thực hiện / Muộn — muộn = quá ETA mà chưa hoàn tất</div>
           </div>
         </div>
         <div class="card-body">
@@ -1027,7 +1027,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">Cơ cấu nguyên vật liệu xuất</div>
-            <div class="card-sub">Số lô theo mặt hàng (Item of goods) — tooltip kèm container &amp; khối lượng</div>
+            <div class="card-sub">Tấn theo mặt hàng (Item of goods)</div>
           </div>
         </div>
         <div class="card-body">
@@ -1039,7 +1039,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">Phân bổ trạng thái xuất</div>
-            <div class="card-sub">Đánh giá muộn dựa trên ETA</div>
+            <div class="card-sub">Tấn theo trạng thái · Đánh giá muộn dựa trên ETA</div>
           </div>
         </div>
         <div class="card-body">
@@ -1094,7 +1094,7 @@
                 <th>Mode</th>
                 <th>CTR</th>
                 <th class="num">Q'ty CTR</th>
-                <th class="num">GW (kg)</th>
+                <th class="num">KL (Tấn)</th>
                 <th>Vessel</th>
                 <th>Carrier</th>
                 <th>Bill No.</th>
@@ -2782,6 +2782,15 @@ const MODE_GROUP = { FCL: 'SEA', LCL: 'SEA', BV: 'SEA', AIR: 'AIR', XETAI: 'TRUC
 const EX_ST_COLORS = { 'Hoàn tất': '#2fb344', 'Đang thực hiện': '#4299e1', 'Muộn': '#d63939' };
 const EX_ST_ORDER  = ['Hoàn tất', 'Đang thực hiện', 'Muộn'];
 
+/* ---- KHỐI LƯỢNG LÔ XUẤT ----
+ * File nguồn chỉ có Q'ty GW (kg) cho hàng rời (BV), AIR và xe tải; hàng FCL bỏ trống.
+ * Để mọi biểu đồ đều quy về TẤN, KL của lô FCL được quy đổi từ số container theo hệ số
+ * dưới đây (sửa hệ số tại đây khi có số liệu chuẩn, hoặc đặt = 0 để loại khỏi thống kê).
+ * ---------------------------- */
+const CTR_TON = { 'HC': 25, 'DC': 22, 'GP': 22, 'FR': 28, 'OT': 26, 'FT': 28, 'FR+OT': 27, '': 24 };
+const exTon   = r => r.gw ? r.gw / 1000 : (r.qty || 0) * (CTR_TON[r.ctr] !== undefined ? CTR_TON[r.ctr] : CTR_TON['']);
+const exIsEst = r => !r.gw && (r.qty || 0) > 0;
+
 /* Trạng thái lô xuất — "muộn" xác định bằng ETA:
    DONE → Hoàn tất; chưa DONE mà đã quá ETA → Muộn; còn lại → Đang thực hiện */
 function exStatus(r) {
@@ -2800,38 +2809,37 @@ const monthKey = d => d ? d.slice(0, 7) : '';
 
 function renderExport() {
   const rows = filterExport();
-  const shipped = rows.filter(r => r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0);
-  const totCtr  = rows.reduce((a, r) => a + (r.qty || 0), 0);
-  const totTon  = rows.reduce((a, r) => a + (r.gw || 0), 0) / 1000;
-  const late    = rows.filter(r => exStatus(r) === 'Muộn');
-  const done    = rows.filter(r => exStatus(r) === 'Hoàn tất');
-  const donePct = rows.length ? (done.length / rows.length * 100) : 0;
+  const shipped   = rows.filter(r => r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0);
+  const tonAll    = rows.reduce((a, r) => a + exTon(r), 0);
+  const tonReal   = rows.reduce((a, r) => a + (r.gw ? r.gw / 1000 : 0), 0);
+  const tonShip   = shipped.reduce((a, r) => a + exTon(r), 0);
+  const lateRows  = rows.filter(r => exStatus(r) === 'Muộn');
+  const tonLate   = lateRows.reduce((a, r) => a + exTon(r), 0);
+  const doneRows  = rows.filter(r => exStatus(r) === 'Hoàn tất');
+  const tonDone   = doneRows.reduce((a, r) => a + exTon(r), 0);
+  const donePct   = tonAll ? (tonDone / tonAll * 100) : 0;
+  const realPct   = tonAll ? (tonReal / tonAll * 100) : 0;
 
   document.getElementById('ex-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
-      <div class="metric-label">Tổng lô xuất</div>
-      <div><span class="metric-value">${rows.length}</span><span class="metric-unit">lô</span></div>
-      <div class="metric-sub">${shipped.length} đã ETD · ${rows.length - shipped.length} kế hoạch / chưa có ETD</div>
+      <div class="metric-label">Tổng KL xuất</div>
+      <div><span class="metric-value">${fmt1(tonAll)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${rows.length} lô · ${realPct.toFixed(2)}% là KL cân thực tế (GW)</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Tổng container</div>
-      <div><span class="metric-value" style="color:var(--info)">${fmt(totCtr)}</span><span class="metric-unit">CTR</span></div>
-      <div class="metric-sub">Hàng FCL / LCL</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Khối lượng xuất</div>
-      <div><span class="metric-value" style="color:var(--success)">${fmt1(totTon)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">Chỉ hàng rời (BV) / AIR / xe tải — FCL không có GW</div>
+      <div class="metric-label">Đã xuất (qua ETD)</div>
+      <div><span class="metric-value" style="color:var(--success)">${fmt1(tonShip)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${shipped.length} lô đã rời cảng</div>
     </div>
     <div class="metric-card" style="border-left:4px solid var(--danger);">
-      <div class="metric-label" style="color:var(--danger);">🚨 Lô muộn</div>
-      <div><span class="metric-value" style="color:var(--danger)">${late.length}</span><span class="metric-unit">lô</span></div>
-      <div class="metric-sub">Đã quá ETA mà chưa hoàn tất</div>
+      <div class="metric-label" style="color:var(--danger);">🚨 KL đang muộn</div>
+      <div><span class="metric-value" style="color:var(--danger)">${fmt1(tonLate)}</span><span class="metric-unit">Tấn</span></div>
+      <div class="metric-sub">${lateRows.length} lô quá ETA mà chưa hoàn tất</div>
     </div>
     <div class="metric-card info-box info-success">
-      <div class="metric-label">Tỷ lệ hoàn tất</div>
+      <div class="metric-label">Tỷ lệ hoàn tất (theo KL)</div>
       <div><span class="metric-value">${donePct.toFixed(2)}</span><span class="metric-unit">%</span></div>
-      <div class="metric-sub">${done.length} / ${rows.length} lô đã DONE</div>
+      <div class="metric-sub">${fmt1(tonDone)} / ${fmt1(tonAll)} Tấn đã DONE</div>
     </div>
   `;
 
@@ -2840,20 +2848,20 @@ function renderExport() {
 }
 
 function renderExportCharts(rows) {
-  // ===== CHART 1: Sản lượng xuất theo tháng (CTR + số lô) =====
+  // ===== CHART 1: Khối lượng xuất theo tháng (thực vs quy đổi) =====
   const months = [...new Set(rows.map(r => monthKey(r.etd)).filter(Boolean))].sort();
-  const ctrByM = months.map(m => rows.filter(r => monthKey(r.etd) === m).reduce((a, r) => a + (r.qty || 0), 0));
-  const lotByM = months.map(m => rows.filter(r => monthKey(r.etd) === m).length);
-  const mLabel = months.map(m => { const [y, mm] = m.split('-'); return `T${Number(mm)}/${y.slice(2)}`; });
+  const realByM = months.map(m => rows.filter(r => monthKey(r.etd) === m && r.gw).reduce((a, r) => a + r.gw / 1000, 0));
+  const estByM  = months.map(m => rows.filter(r => monthKey(r.etd) === m && !r.gw).reduce((a, r) => a + exTon(r), 0));
+  const mLabel  = months.map(m => { const [y, mm] = m.split('-'); return `T${Number(mm)}/${y.slice(2)}`; });
 
   if (exMonthChart) exMonthChart.destroy();
   exMonthChart = new Chart(document.getElementById('chart-ex-month'), {
+    type: 'bar',
     data: {
       labels: mLabel,
       datasets: [
-        { type: 'bar',  label: 'Container (CTR)', data: ctrByM, backgroundColor: '#0054a6', borderRadius: 4, yAxisID: 'y', order: 2 },
-        { type: 'line', label: 'Số lô xuất', data: lotByM, borderColor: '#f7a531', backgroundColor: '#f7a531',
-          borderWidth: 3, tension: 0.3, pointRadius: 4, yAxisID: 'y1', order: 1 },
+        { label: 'KL cân thực tế (GW)',     data: realByM, backgroundColor: '#0054a6', stack: 'kl', borderRadius: 2 },
+        { label: 'KL ước tính (từ số cont)', data: estByM,  backgroundColor: '#93c5fd', stack: 'kl', borderRadius: { topLeft: 3, topRight: 3 } },
       ]
     },
     options: {
@@ -2861,31 +2869,35 @@ function renderExportCharts(rows) {
       plugins: {
         legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
         datalabels: {
-          color: (c) => c.datasetIndex === 0 ? '#1d273b' : '#b45309',
-          font: { size: 11, weight: '700' }, anchor: 'end', align: 'end', offset: 2,
-          formatter: (v) => v > 0 ? v : ''
+          color: (c) => c.datasetIndex === 0 ? '#fff' : '#1e3a8a',
+          font: { size: 11, weight: '700' }, anchor: 'center', align: 'center',
+          formatter: (v) => v >= 100 ? fmtC(v) : ''
         },
-        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.raw)}` } }
+        tooltip: {
+          callbacks: {
+            label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn`,
+            footer: (items) => `Tổng: ${fmt1(items.reduce((a, i) => a + i.raw, 0))} Tấn`
+          }
+        }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-        y:  { beginAtZero: true, position: 'left',  grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, title: { display: true, text: 'CTR', font: { size: 11 } } },
-        y1: { beginAtZero: true, position: 'right', grid: { display: false },   ticks: { font: { size: 10 } }, title: { display: true, text: 'Số lô', font: { size: 11 } } }
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => fmtC(v), font: { size: 10 } }, title: { display: true, text: 'Tấn', font: { size: 11 } } }
       }
     }
   });
 
-  // ===== CHART 2: Trạng thái theo dự án =====
+  // ===== CHART 2: Khối lượng theo dự án × trạng thái =====
   const pMap = {};
   rows.forEach(r => {
-    if (!pMap[r.proj]) pMap[r.proj] = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0, ctr: 0, ton: 0, lot: 0 };
-    pMap[r.proj][exStatus(r)]++;
-    pMap[r.proj].ctr += (r.qty || 0);
-    pMap[r.proj].ton += (r.gw || 0) / 1000;
+    if (!pMap[r.proj]) pMap[r.proj] = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0, ton: 0, lot: 0 };
+    const t = exTon(r);
+    pMap[r.proj][exStatus(r)] += t;
+    pMap[r.proj].ton += t;
     pMap[r.proj].lot++;
   });
   const pTop = Object.entries(pMap).map(([k, v]) => ({ proj: k, ...v }))
-    .sort((a, b) => b.lot - a.lot || b.ctr - a.ctr).slice(0, 10);
+    .sort((a, b) => b.ton - a.ton).slice(0, 10);
 
   if (exProjChart) exProjChart.destroy();
   setHBarHeight('chart-ex-proj', Math.max(3, pTop.length));
@@ -2902,13 +2914,13 @@ function renderExportCharts(rows) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        datalabels: { color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? v : '' },
+        datalabels: { color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? fmtC(v) : '' },
         tooltip: {
           callbacks: {
-            label: c => ` ${c.dataset.label}: ${c.raw} lô`,
+            label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn`,
             afterBody: (items) => {
               const r = pTop[items[0].dataIndex];
-              return `\nTổng ${r.lot} lô · ${fmt(r.ctr)} CTR · ${fmt1(r.ton)} Tấn`;
+              return `\nTổng ${fmt1(r.ton)} Tấn · ${r.lot} lô`;
             }
           }
         }
@@ -2921,18 +2933,18 @@ function renderExportCharts(rows) {
   });
   renderHBarAxis('chart-ex-proj-axis', exProjMax, exProjDatasets, true);
 
-  // ===== CHART 3: Cơ cấu nguyên vật liệu =====
+  // ===== CHART 3: Cơ cấu nguyên vật liệu theo khối lượng =====
   const iMap = {};
   rows.forEach(r => {
     const k = r.item || '(Chưa phân loại)';
-    if (!iMap[k]) iMap[k] = { lot: 0, ctr: 0, ton: 0 };
-    iMap[k].lot++; iMap[k].ctr += (r.qty || 0); iMap[k].ton += (r.gw || 0) / 1000;
+    if (!iMap[k]) iMap[k] = { ton: 0, lot: 0 };
+    iMap[k].ton += exTon(r); iMap[k].lot++;
   });
-  const iTop = Object.entries(iMap).map(([k, v]) => ({ item: k, ...v })).sort((a, b) => b.lot - a.lot).slice(0, 8);
+  const iTop = Object.entries(iMap).map(([k, v]) => ({ item: k, ...v })).sort((a, b) => b.ton - a.ton).slice(0, 8);
 
   if (exItemChart) exItemChart.destroy();
   setHBarHeight('chart-ex-item', Math.max(3, iTop.length));
-  const exItemDatasets = [{ label: 'Số lô', data: iTop.map(r => r.lot), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const exItemDatasets = [{ label: 'Tấn', data: iTop.map(r => r.ton), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
   const exItemMax = computeMaxX(exItemDatasets, false);
   exItemChart = new Chart(document.getElementById('chart-ex-item'), {
     type: 'bar',
@@ -2941,14 +2953,11 @@ function renderExportCharts(rows) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? v : '' },
+        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? fmtC(v) : '' },
         tooltip: {
           callbacks: {
-            label: c => ` ${c.raw} lô xuất`,
-            afterBody: (items) => {
-              const r = iTop[items[0].dataIndex];
-              return `\n${fmt(r.ctr)} container · ${fmt1(r.ton)} Tấn`;
-            }
+            label: c => ` ${fmt1(c.raw)} Tấn`,
+            afterBody: (items) => `\n${iTop[items[0].dataIndex].lot} lô xuất`
           }
         }
       },
@@ -2960,9 +2969,10 @@ function renderExportCharts(rows) {
   });
   renderHBarAxis('chart-ex-item-axis', exItemMax, exItemDatasets, false);
 
-  // ===== CHART 4: Phân bổ trạng thái =====
+  // ===== CHART 4: Phân bổ trạng thái theo khối lượng =====
   const stMap = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0 };
-  rows.forEach(r => stMap[exStatus(r)]++);
+  const stLot = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0 };
+  rows.forEach(r => { const k = exStatus(r); stMap[k] += exTon(r); stLot[k]++; });
   if (exStatusChart) exStatusChart.destroy();
   exStatusChart = new Chart(document.getElementById('chart-ex-status'), {
     type: 'doughnut',
@@ -2974,8 +2984,13 @@ function renderExportCharts(rows) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        datalabels: { color: '#fff', font: { size: 14, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? v : '' },
-        tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const p = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${c.label}: ${c.raw} lô (${p}%)`; } } }
+        datalabels: { color: '#fff', font: { size: 13, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? fmtC(v) : '' },
+        tooltip: {
+          callbacks: {
+            label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const p = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${c.label}: ${fmt1(c.raw)} Tấn (${p}%)`; },
+            afterLabel: c => ` ${stLot[c.label]} lô`
+          }
+        }
       },
       cutout: '58%'
     }
@@ -3020,7 +3035,7 @@ function renderExportTable(rows) {
         <td style="font-size:12px;">${modeIcon[r.mode] || r.mode || '—'}</td>
         <td style="font-size:12px;">${r.ctr || '<span class="cell-muted">—</span>'}</td>
         <td class="num">${r.qty || '<span class="cell-muted">—</span>'}</td>
-        <td class="num">${r.gw ? fmt(r.gw) : '<span class="cell-muted">—</span>'}</td>
+        <td class="num"${exIsEst(r) ? ' title="KL ước tính từ số container — lô này chưa có số cân GW"' : ''}>${exTon(r) ? (exIsEst(r) ? '~' : '') + fmt1(exTon(r)) : '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${r.vessel || '<span class="cell-muted">—</span>'}</td>
         <td class="cell-muted">${r.carrier || '—'}</td>
         <td style="font-family:monospace; font-size:11px;">${r.bill || '<span class="cell-muted">—</span>'}</td>
