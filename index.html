@@ -148,6 +148,19 @@
 
   /* TABLE */
   .table-wrap { overflow-x: auto; }
+  /* Bảng dài → giới hạn chiều cao, cuộn dọc trong bảng thay vì kéo dài cả trang */
+  .table-scroll { max-height: 520px; overflow: auto; }
+  .table-scroll thead th { position: sticky; top: 0; z-index: 3; background: #f8fafc; }
+  .table-scroll thead th::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -2px;
+    height: 2px; background: var(--border);
+  }
+  /* Bảng chi tiết nhập/xuất: giữ mỗi bản ghi trên đúng 1 dòng, bù lại bằng cuộn ngang */
+  #tblwrap-in tbody td, #tblwrap-out tbody td { white-space: nowrap; }
+  .table-foot {
+    padding: 8px 14px; border-top: 1px solid var(--border); background: #f8fafc;
+    font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;
+  }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead tr { background: #f8fafc; }
   thead th {
@@ -497,7 +510,7 @@
         <span class="metric-badge badge-neutral" id="ov-count-badge">7 dòng</span>
       </div>
       <div class="card-body no-pad">
-        <div class="table-wrap">
+        <div class="table-wrap table-scroll">
           <table>
             <thead>
               <tr>
@@ -617,7 +630,7 @@
             </div>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-scroll">
           <table>
             <thead>
               <tr>
@@ -662,7 +675,7 @@
             </div>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-scroll">
           <table>
             <thead>
               <tr>
@@ -708,7 +721,7 @@
             </div>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-scroll">
           <table>
             <thead>
               <tr>
@@ -753,7 +766,7 @@
             </div>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-scroll">
           <table>
             <thead>
               <tr>
@@ -1022,12 +1035,12 @@
       </div>
     </div>
 
-    <div class="grid-2-8-4" style="margin-top:20px;">
+    <div class="grid-2" style="margin-top:20px;">
       <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
             <div class="card-title">Cơ cấu nguyên vật liệu xuất</div>
-            <div class="card-sub">Tấn theo mặt hàng (Item of goods) · chỉ lô đã có GW</div>
+            <div class="card-sub">Tấn theo mặt hàng (Item of goods) · nhãn kèm % · tự chuyển thang log khi chênh lệch quá lớn</div>
           </div>
         </div>
         <div class="card-body">
@@ -1038,12 +1051,12 @@
       <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Theo Export type</div>
-            <div class="card-sub">Tấn theo mã Export type · chỉ lô đã có GW</div>
+            <div class="card-title">Khối lượng theo Export type</div>
+            <div class="card-sub">Tấn theo mã Export type · nhãn kèm % · tự chuyển thang log khi chênh lệch quá lớn</div>
           </div>
         </div>
         <div class="card-body">
-          <div style="position:relative; height:300px;"><canvas id="chart-ex-type"></canvas></div>
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-ex-type"></canvas></div></div><div class="hbar-axis-wrap" id="chart-ex-type-axis"></div></div>
         </div>
       </div>
     </div>
@@ -1087,7 +1100,7 @@
         </div>
       </div>
       <div class="card-body no-pad">
-        <div class="table-wrap" id="tblwrap-in">
+        <div class="table-wrap table-scroll" id="tblwrap-in">
           <table class="dashboard-table">
             <thead>
               <tr>
@@ -1109,7 +1122,7 @@
             <tbody id="tbody-lg-alert"></tbody>
           </table>
         </div>
-        <div class="table-wrap" id="tblwrap-out" style="display:none;">
+        <div class="table-wrap table-scroll" id="tblwrap-out" style="display:none;">
           <table class="dashboard-table">
             <thead>
               <tr>
@@ -1119,18 +1132,25 @@
                 <th>Mặt hàng</th>
                 <th>Mode</th>
                 <th>Điều kiện giao</th>
+                <th>CTR</th>
                 <th class="num">Q'ty CTR</th>
                 <th class="num">KL (Tấn)</th>
                 <th>Vessel No.</th>
+                <th>Carrier</th>
+                <th>Bill No.</th>
                 <th>POL</th>
+                <th>POD</th>
                 <th>ETD</th>
                 <th>ETA</th>
+                <th>Tờ khai</th>
+                <th>C/O</th>
                 <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody id="tbody-ex-detail"></tbody>
           </table>
         </div>
+        <div class="table-foot" id="ex-tbl-foot" style="display:none;"></div>
       </div>
     </div>
 
@@ -1560,6 +1580,35 @@ function niceStep(max, targetTicks) {
   const norm = rough / mag;
   const niceNorms = [1, 2, 2.5, 5, 10];
   return (niceNorms.find(n => n >= norm) || 10) * mag;
+}
+
+/* Trục ngang dạng log — dùng khi tỷ trọng giữa các nhóm chênh nhau quá lớn
+   (ví dụ 17.500 Tấn vs 0,4 Tấn) khiến thang tuyến tính không đọc được */
+function renderHBarAxisLog(containerId, minX, maxX) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const lo = Math.log10(minX), hi = Math.log10(maxX);
+  const ticks = [];
+  for (let e = Math.ceil(lo); e <= Math.floor(hi); e++) ticks.push(Math.pow(10, e));
+  if (!ticks.length) ticks.push(minX, maxX);
+
+  const xRow = document.createElement('div');
+  xRow.className = 'hbar-xaxis-row';
+  ticks.forEach(v => {
+    const tick = document.createElement('div');
+    tick.className = 'hbar-xaxis-tick';
+    const pos = (Math.log10(v) - lo) / (hi - lo);
+    tick.style.left = `calc(${HBAR_Y_WIDTH}px + (100% - ${HBAR_Y_WIDTH + HBAR_RIGHT_PAD}px) * ${pos})`;
+    tick.innerHTML = `<span class="tk-mark"></span>${fmt(v)}`;
+    xRow.appendChild(tick);
+  });
+  container.appendChild(xRow);
+
+  const note = document.createElement('div');
+  note.className = 'hbar-legend-row';
+  note.innerHTML = `<span class="hbar-legend-item" style="color:var(--muted); font-style:italic;">Trục ngang dạng log — đọc giá trị ở nhãn trên từng thanh</span>`;
+  container.appendChild(note);
 }
 
 function renderHBarAxis(containerId, maxX, datasets, showLegend) {
@@ -2894,8 +2943,21 @@ function exGroup(rows, keyFn, emptyLabel) {
 /* Hbar 1 dataset theo Tấn — dùng chung cho Item of goods / POL */
 function exHBar(canvasId, axisId, data, monospace) {
   setHBarHeight(canvasId, Math.max(3, data.length));
-  const ds = [{ label: 'Tấn', data: data.map(r => r.ton), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
-  const max = computeMaxX(ds, false);
+  const total = data.reduce((a, r) => a + r.ton, 0);
+  const ds = [{
+    label: 'Tấn', data: data.map(r => r.ton),
+    backgroundColor: data.map((r, i) => i === 0 ? '#0054a6' : (r.ton / (total || 1) < 0.02 ? '#94a3b8' : '#4299e1')),
+    borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85,
+    minBarLength: 6   // nhóm chiếm tỷ trọng rất nhỏ vẫn hiện được thanh để đọc nhãn
+  }];
+  // Chênh lệch giữa nhóm lớn nhất và nhỏ nhất > 100 lần → dùng thang log cho dễ đọc
+  const vals   = data.map(r => r.ton).filter(v => v > 0);
+  const vMax   = Math.max(...vals, 1), vMin = Math.min(...vals, vMax);
+  const useLog = vals.length > 1 && vMax / vMin > 100;
+  const logMin = Math.pow(10, Math.floor(Math.log10(vMin)));
+  const logMax = Math.pow(10, Math.ceil(Math.log10(vMax)));
+  const max = useLog ? logMax : computeMaxX(ds, false);
+  if (useLog) ds[0].minBarLength = 0;
   const chart = new Chart(document.getElementById(canvasId), {
     type: 'bar',
     data: { labels: data.map(r => r.key), datasets: ds },
@@ -2903,10 +2965,13 @@ function exHBar(canvasId, axisId, data, monospace) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? fmtC(v) : '' },
+        datalabels: {
+          color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4,
+          formatter: (v) => v > 0 ? `${fmtC(v)}  (${(v / (total || 1) * 100).toFixed(1)}%)` : ''
+        },
         tooltip: {
           callbacks: {
-            label: c => ` ${fmt1(c.raw)} Tấn`,
+            label: c => ` ${fmt1(c.raw)} Tấn (${(c.raw / (total || 1) * 100).toFixed(2)}%)`,
             afterBody: (items) => {
               const r = data[items[0].dataIndex];
               return `\n${r.lot} lô · ${fmt(r.ctr)} container` + (r.nogw ? `\n${r.nogw} lô chưa có GW (không tính vào KL)` : '');
@@ -2915,12 +2980,15 @@ function exHBar(canvasId, axisId, data, monospace) {
         }
       },
       scales: {
-        x: { display: false, beginAtZero: true, max },
+        x: useLog
+          ? { display: false, type: 'logarithmic', min: logMin, max: logMax }
+          : { display: false, beginAtZero: true, max },
         y: { grid: { display: false }, ticks: { font: { size: 12, family: monospace ? 'monospace' : undefined } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
       }
     }
   });
-  renderHBarAxis(axisId, max, ds, false);
+  if (useLog) renderHBarAxisLog(axisId, logMin, logMax);
+  else renderHBarAxis(axisId, max, ds, false);
   return chart;
 }
 
@@ -2933,7 +3001,13 @@ function exDoughnut(canvasId, data, palette) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 6 } },
-        datalabels: { color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? fmtC(v) : '' },
+        datalabels: {
+          color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center',
+          formatter: (v, ctx) => {
+            const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            return (t && v / t >= 0.04) ? fmtC(v) : '';   // lát quá nhỏ thì bỏ nhãn, xem ở tooltip
+          }
+        },
         tooltip: {
           callbacks: {
             label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const pc = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${fmt1(c.raw)} Tấn (${pc}%)`; },
@@ -3038,7 +3112,7 @@ function renderExportCharts(rows) {
 
   // ===== CHART 4: Export type =====
   if (exTypeChart) exTypeChart.destroy();
-  exTypeChart = exDoughnut('chart-ex-type', exGroup(rows, r => r.et, '(Trống)').filter(r => r.ton > 0).slice(0, 8), EX_PALETTE);
+  exTypeChart = exHBar('chart-ex-type', 'chart-ex-type-axis', exGroup(rows, r => r.et, '(Trống)').filter(r => r.ton > 0).slice(0, 8), true);
 
   // ===== CHART 5: Cảng xuất (POL) =====
   if (exPolChart) exPolChart.destroy();
@@ -3055,10 +3129,17 @@ function renderExportTable(rows) {
   tbody.innerHTML = '';
   const sorted = [...rows].sort((a, b) => (b.etd || '').localeCompare(a.etd || ''));
   if (sorted.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Không có dữ liệu xuất.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="19" class="empty-state">Không có dữ liệu xuất.</td></tr>`;
     return;
   }
   const modeIcon = { FCL: '🚢 FCL', LCL: '🚢 LCL', BV: '🚢 BV', AIR: '✈️ AIR', XETAI: '🚚 Xe tải' };
+  const coPill = (v) => {
+    if (v === 'xong')  return `<span class="status-pill badge-success">Xong</span>`;
+    if (v === 'nháp')  return `<span class="status-pill badge-warning">Nháp</span>`;
+    if (v === 'chưa')  return `<span class="status-pill badge-danger">Chưa</span>`;
+    if (v === 'không') return `<span class="status-pill badge-info">Không</span>`;
+    return '<span class="cell-muted">—</span>';
+  };
   const stPill = (r) => {
     const st = exStatus(r);
     const cls = st === 'Hoàn tất' ? 'badge-success' : (st === 'Muộn' ? 'badge-danger' : 'badge-info');
@@ -3067,6 +3148,10 @@ function renderExportTable(rows) {
     return `<span class="status-pill ${cls}"${hint}>${st}</span>`;
   };
   sorted.forEach((r) => {
+    const shipped = r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0;
+    const cdsCell = r.cds
+      ? `<span style="font-family:monospace; font-size:11px;">${r.cds}</span>`
+      : (shipped ? `<span class="status-pill badge-danger">Thiếu</span>` : '<span class="cell-muted">—</span>');
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td>${r.no}</td>
@@ -3075,16 +3160,24 @@ function renderExportTable(rows) {
         <td>${r.item || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${modeIcon[r.mode] || r.mode || '—'}</td>
         <td style="font-size:12px; font-weight:600;">${r.dlv || '<span class="cell-muted">—</span>'}</td>
-        <td class="num">${r.qty ? fmt(r.qty) + (r.ctr ? ` <span class="cell-muted">${r.ctr}</span>` : '') : '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${r.ctr || '<span class="cell-muted">—</span>'}</td>
+        <td class="num">${r.qty ? fmt(r.qty) : '<span class="cell-muted">—</span>'}</td>
         <td class="num">${r.gw ? fmt1(exTon(r)) : '<span class="cell-muted">chưa có GW</span>'}</td>
         <td style="font-size:12px;">${r.vessel || '<span class="cell-muted">—</span>'}</td>
+        <td class="cell-muted">${r.carrier || '—'}</td>
+        <td style="font-family:monospace; font-size:11px;">${r.bill || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${r.pol || '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px;">${r.pod || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${fmtD(r.etd)}</td>
         <td style="font-size:12px;">${fmtD(r.eta)}</td>
+        <td>${cdsCell}</td>
+        <td>${coPill(r.co)}</td>
         <td>${stPill(r)}</td>
       </tr>
     `);
   });
+  const foot = document.getElementById('ex-tbl-foot');
+  if (foot) foot.innerHTML = `<span>Hiển thị <b>${sorted.length}</b> lô xuất — cuộn trong bảng để xem tiếp</span><span>Cuộn ngang để xem đủ cột</span>`;
 }
 
 /* ---- Toggle bảng chi tiết Nhập / Xuất ---- */
@@ -3096,12 +3189,13 @@ document.querySelectorAll('.tbl-toggle button').forEach(btn => {
     const isIn = lgTableMode === 'in';
     document.getElementById('tblwrap-in').style.display  = isIn ? '' : 'none';
     document.getElementById('tblwrap-out').style.display = isIn ? 'none' : '';
+    document.getElementById('ex-tbl-foot').style.display = isIn ? 'none' : 'flex';
     document.getElementById('lg-tbl-title').innerHTML = isIn
       ? '🚨 Chi tiết Nhập — Shipment cần chú ý (Top 15)'
       : '📤 Chi tiết Xuất — Danh sách lô xuất khẩu';
     document.getElementById('lg-tbl-sub').innerHTML = isIn
       ? 'Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)'
-      : 'Sắp xếp theo ETD mới nhất · KL chỉ hiển thị khi lô đã có số cân GW trong file nguồn';
+      : 'Sắp xếp theo ETD mới nhất · KL chỉ hiển thị khi lô đã có số cân GW trong file nguồn · cuộn dọc/ngang trong bảng';
   });
 });
 
