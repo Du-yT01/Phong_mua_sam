@@ -896,7 +896,7 @@
       </ul>
       <p class="note">ETA Update dùng để so sánh là <b>ngày gần nhất</b> trong các dòng chưa đủ hàng của NCC / MPR / loại vật tư / PO đó.</p>
 
-      <p><b>Trang Logistic</b> gồm 2 phần: <b>📥 Nhập NVL</b> (lịch về Amecc, tổng nhập theo NCC, NCC giao chậm so với Plan ETA Update) và <b>📤 Xuất NVL</b> (khối lượng theo tháng, khối lượng theo dự án, cơ cấu nguyên vật liệu, phân bổ trạng thái — tất cả quy về <b>Tấn</b>; lô "Muộn" = đã quá ETA mà chưa hoàn tất). Bảng chi tiết cuối trang có nút chuyển giữa <b>Chi tiết nhập</b> và <b>Chi tiết xuất</b>.</p>
+      <p><b>Trang Logistic</b> gồm 2 phần: <b>📥 Nhập NVL</b> (lịch về Amecc, tổng nhập theo NCC, NCC giao chậm so với Plan ETA Update) và <b>📤 Xuất NVL</b> (khối lượng theo tháng/ETD, theo dự án, theo nguyên vật liệu, theo Export type, theo cảng xuất POL và theo điều kiện giao hàng — tất cả quy về <b>Tấn</b>; lô "Muộn" = đã quá ETA mà chưa hoàn tất). Bảng chi tiết cuối trang có nút chuyển giữa <b>Chi tiết nhập</b> và <b>Chi tiết xuất</b>.</p>
 
       <div class="mock">
         <span class="mock-label">Sub-tabs bên trong Material Status</span>
@@ -1001,7 +1001,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">Khối lượng xuất theo tháng</div>
-            <div class="card-sub">Tấn theo ETD · Xanh đậm = KL cân thực tế (GW) · Xanh nhạt = KL ước tính từ số container</div>
+            <div class="card-sub">Cột = Tấn theo ETD (chỉ lô đã có số cân GW) · Đường = số container</div>
           </div>
         </div>
         <div class="card-body">
@@ -1013,7 +1013,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">Khối lượng xuất theo dự án</div>
-            <div class="card-sub">Tấn theo Hoàn tất / Đang thực hiện / Muộn — muộn = quá ETA mà chưa hoàn tất</div>
+            <div class="card-sub">Tấn theo Hoàn tất / Đang thực hiện / Muộn (muộn = quá ETA mà chưa hoàn tất) · chỉ lô đã có GW</div>
           </div>
         </div>
         <div class="card-body">
@@ -1027,7 +1027,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">Cơ cấu nguyên vật liệu xuất</div>
-            <div class="card-sub">Tấn theo mặt hàng (Item of goods)</div>
+            <div class="card-sub">Tấn theo mặt hàng (Item of goods) · chỉ lô đã có GW</div>
           </div>
         </div>
         <div class="card-body">
@@ -1038,12 +1038,38 @@
       <div class="card" style="margin:0;">
         <div class="card-header">
           <div>
-            <div class="card-title">Phân bổ trạng thái xuất</div>
-            <div class="card-sub">Tấn theo trạng thái · Đánh giá muộn dựa trên ETA</div>
+            <div class="card-title">Theo Export type</div>
+            <div class="card-sub">Tấn theo mã Export type · chỉ lô đã có GW</div>
           </div>
         </div>
         <div class="card-body">
-          <div style="position:relative; height:300px;"><canvas id="chart-ex-status"></canvas></div>
+          <div style="position:relative; height:300px;"><canvas id="chart-ex-type"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2-8-4" style="margin-top:20px;">
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Khối lượng theo cảng xuất (POL)</div>
+            <div class="card-sub">Tấn theo cảng bốc hàng · chỉ lô đã có GW — tooltip kèm container &amp; số lô</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="hbar-container"><div class="hbar-body-wrap"><div class="hbar-inner"><canvas id="chart-ex-pol"></canvas></div></div><div class="hbar-axis-wrap" id="chart-ex-pol-axis"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Điều kiện giao hàng</div>
+            <div class="card-sub">Tấn theo Delivery term · chỉ lô đã có GW</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="position:relative; height:300px;"><canvas id="chart-ex-dlv"></canvas></div>
         </div>
       </div>
     </div>
@@ -1089,22 +1115,17 @@
               <tr>
                 <th>#</th>
                 <th>Dự án</th>
-                <th>Loại</th>
+                <th>Export type</th>
                 <th>Mặt hàng</th>
                 <th>Mode</th>
-                <th>CTR</th>
+                <th>Điều kiện giao</th>
                 <th class="num">Q'ty CTR</th>
                 <th class="num">KL (Tấn)</th>
-                <th>Vessel</th>
-                <th>Carrier</th>
-                <th>Bill No.</th>
+                <th>Vessel No.</th>
                 <th>POL</th>
-                <th>POD</th>
                 <th>ETD</th>
                 <th>ETA</th>
-                <th>Tờ khai</th>
-                <th>C/O</th>
-                <th>Status</th>
+                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody id="tbody-ex-detail"></tbody>
@@ -1256,93 +1277,93 @@ const logisticData = [
  *          cho hàng rời (BV), AIR và xe tải. etd trống → dùng ngày cutoff CY thay thế.
  * ----------------------------------------------------------------- */
 const exportData = [
-  { no:161, di:'26/12/25', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:10, gw:0,       vessel:'',                          carrier:'HANS',       bill:'100FX22181',        pol:'',             pod:'',                      etd:'2026-01-02', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
-  { no:162, di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'CEVA',       bill:'6439419590',        pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
-  { no:163, di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'',                          carrier:'HANS',       bill:'HANA37472400',      pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
-  { no:164, di:'',         proj:'U273', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'EVEROK',     bill:'ZIMUHAI80192611',   pol:'',             pod:'',                      etd:'2026-01-09', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:165, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:939085,  vessel:'VIOLET ACE V.J2601E',       carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-13', eta:'',           cds:'308144141340', co:'',      st:'DONE', pic:'' },
-  { no:166, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:933312,  vessel:'MV DA HONG XIA V084',       carrier:'Age Lines',  bill:'',                  pol:'Đoạn Xá',      pod:'',                      etd:'2026-01-15', eta:'',           cds:'308154866300', co:'',      st:'DONE', pic:'' },
-  { no:167, di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'STEPHANIA K 030S',          carrier:'HANS',       bill:'2316869530',        pol:'Nam Đình Vũ',  pod:'',                      etd:'2026-01-14', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:168, di:'11/01/26', proj:'F0243',et:'E62', item:'Băng tải than',       mode:'FCL',   ctr:'OT', qty:10, gw:0,       vessel:'MSC ELBA III HV552R',       carrier:'DSV',        bill:'EBKG15369448',      pol:'HITC',         pod:'',                      etd:'2026-01-14', eta:'',           cds:'308146589500', co:'',      st:'DONE', pic:'' },
-  { no:169, di:'16/01/26', proj:'(N/A)',et:'H21', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:440,     vessel:'RH0318/17JAN',              carrier:'TSL',        bill:'HORD26010034',      pol:'Nội Bài',      pod:'',                      etd:'2026-01-17', eta:'',           cds:'308156249130', co:'',      st:'DONE', pic:'' },
-  { no:170, di:'17/01/26', proj:'E275', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:120182,  vessel:'MV YI HUI REN HAI V.2601',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-19', eta:'',           cds:'308166876750', co:'',      st:'DONE', pic:'' },
-  { no:171, di:'17/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:330932,  vessel:'MV NAVI SUNNY V.MK2605E',   carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-21', eta:'',           cds:'308168378620', co:'',      st:'DONE', pic:'' },
-  { no:172, di:'22/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:5,  gw:36066,   vessel:'EVER CERTAIN N072',         carrier:'HANS',       bill:'100GA00099',        pol:'VIP',          pod:'DAMMAM',                etd:'2026-01-30', eta:'',           cds:'308192619840', co:'xong', st:'DONE', pic:'' },
-  { no:173, di:'28/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:866969,  vessel:'MV Silver Place',           carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:174, di:'30/01/26', proj:'B272', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'HANSA COLOMBO 072S',        carrier:'BEE',        bill:'6443658670',        pol:'Nam Đình Vũ',  pod:'Algeria',               etd:'2026-02-03', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:175, di:'30/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:0,       vessel:'Hai Duong 09',              carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:176, di:'30/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'CSCL GLOBE 074W',           carrier:'HANS',       bill:'2319584390',        pol:'HẢI PHÒNG',    pod:'DAMMAM',                etd:'2026-02-13', eta:'',           cds:'308250960160', co:'xong', st:'DONE', pic:'' },
-  { no:177, di:'07/02/26', proj:'A286', et:'B13', item:'Van & phụ kiện',      mode:'XETAI', ctr:'',   qty:0,  gw:11,      vessel:'Xe tải',                    carrier:'',           bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-02-10', eta:'',           cds:'308243874542', co:'',      st:'DONE', pic:'' },
-  { no:178, di:'11/02/26', proj:'E275', et:'E52', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:240288,  vessel:'XIN HAI TONG 502 V.SE2604', carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'VENICE',                etd:'2026-03-06', eta:'',           cds:'308285316750', co:'',      st:'DONE', pic:'' },
-  { no:179, di:'23/02/26', proj:'U302', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-03-01', eta:'',           cds:'308271773300', co:'',      st:'DONE', pic:'' },
-  { no:180, di:'23/02/26', proj:'M277', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'PEGASUS GLORY 2605N',       carrier:'HANS',       bill:'HANA31844600',      pol:'TÂN VŨ',       pod:'',                      etd:'2026-03-09', eta:'',           cds:'308281111630', co:'',      st:'DONE', pic:'' },
-  { no:181, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:5,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'6446168400',        pol:'HITC',         pod:'',                      etd:'2026-03-09', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
-  { no:182, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:7,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'',                  pol:'',             pod:'',                      etd:'2026-03-14', eta:'',           cds:'308320368440', co:'',      st:'DONE', pic:'' },
-  { no:183, di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:85349,   vessel:'COSCO VENICE / 077E',       carrier:'FLS',        bill:'HCM00000622A',      pol:'LẠCH HUYỆN',   pod:'SEATTLE, USA',          etd:'2026-03-22', eta:'',           cds:'308338797600', co:'',      st:'DONE', pic:'' },
-  { no:184, di:'27/03/26', proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'COSCO SANTOS 098E',         carrier:'FLS',        bill:'6447802040',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-03-28', eta:'2026-04-02', cds:'',             co:'xong', st:'DONE', pic:'' },
-  { no:185, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FT', qty:5,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6447887970',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390500960', co:'xong', st:'DONE', pic:'' },
-  { no:186, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448786270',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390501660', co:'xong', st:'DONE', pic:'' },
-  { no:187, di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448858740',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390502360', co:'xong', st:'DONE', pic:'' },
-  { no:188, di:'09/04/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'XIN DAN DONG 560E',         carrier:'FLS',        bill:'6450295080',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-18', eta:'2026-05-18', cds:'308440580360', co:'xong', st:'DONE', pic:'' },
-  { no:189, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:12005,   vessel:'ULSAN 616S',                carrier:'Hapag Lloyd',bill:'HNSE26040085',      pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-16', eta:'2026-06-11', cds:'308428675720', co:'xong', st:'DONE', pic:'' },
-  { no:190, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'308468447030', co:'không',st:'DONE', pic:'' },
-  { no:191, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR+OT',qty:4,gw:0,       vessel:'TANJUNG PELEPAS',           carrier:'Hapag Lloyd',bill:'24437755',          pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-29', eta:'2026-06-08', cds:'308474052410', co:'xong', st:'DONE', pic:'' },
-  { no:192, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3132126',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467133460', co:'xong', st:'DONE', pic:'' },
-  { no:193, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3123585',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467353040', co:'xong', st:'DONE', pic:'' },
-  { no:194, di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:1,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3137067',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308466862820', co:'xong', st:'DONE', pic:'' },
-  { no:195, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:34709,   vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX06929',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-09', eta:'',           cds:'308502713910', co:'xong', st:'DONE', pic:'' },
-  { no:196, di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'CNC URANUS',                carrier:'Deugro',     bill:'SSEL00002808',      pol:'Nam Đình Vũ',  pod:'HAMAD',                 etd:'2026-05-10', eta:'',           cds:'308510165410', co:'xong', st:'DONE', pic:'' },
-  { no:197, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'AMECC',        pod:'QUẢNG NGÃI',            etd:'2026-05-08', eta:'2026-05-10', cds:'308511147730', co:'không',st:'DONE', pic:'' },
-  { no:198, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'ULSAN 620S',                carrier:'HANS',       bill:'HLCUSGN2604BCOX0',  pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-14', eta:'2026-07-04', cds:'308517503030', co:'xong', st:'DONE', pic:'' },
-  { no:199, di:'22/05/26', proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:8,  gw:0,       vessel:'GOLDEN STAR 1 6622N',       carrier:'TGL',        bill:'ONEHANG51252500',   pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-14', eta:'2026-05-19', cds:'308525960430', co:'xong', st:'DONE', pic:'' },
-  { no:200, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:15, gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518811700', co:'xong', st:'DONE', pic:'' },
-  { no:201, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600296752',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308522968850', co:'không',st:'DONE', pic:'' },
-  { no:202, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:9,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518528420', co:'xong', st:'DONE', pic:'' },
-  { no:203, di:'22/05/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX08243',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-31', eta:'2026-06-26', cds:'308581412440', co:'xong', st:'DONE', pic:'' },
-  { no:204, di:'01/06/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:26337,   vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3205497',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-08', eta:'2026-07-06', cds:'308607521150', co:'nháp', st:'DONE', pic:'' },
-  { no:205, di:'30/05/26', proj:'A286', et:'B13', item:'Nguyên vật liệu',     mode:'BV',    ctr:'',   qty:0,  gw:438,     vessel:'HANSA COLOMBO 080S',        carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-05-30', eta:'2026-06-05', cds:'308582594040', co:'',      st:'DONE', pic:'' },
-  { no:206, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1248215, vessel:'BBC TOKYO Voy.1386005',     carrier:'THORENSEN',  bill:'BBCTOKYO',          pol:'MIPEC',        pod:'ALABAMA, USA',          etd:'2026-06-08', eta:'2026-07-08', cds:'308621763020', co:'xong', st:'DONE', pic:'Alex Soe' },
-  { no:207, di:'23/05/26', proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1163540, vessel:'MV DERYOUNG SPRING',        carrier:'VOSA',       bill:'HPBA6061601',       pol:'MIPEC',        pod:'SEAFRONT PORT, BATAAN', etd:'2026-06-13', eta:'2026-06-21', cds:'308573994800', co:'không',st:'DONE', pic:'' },
-  { no:208, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'122600042708807',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-13', eta:'2026-07-11', cds:'308625698530', co:'xong', st:'DONE', pic:'' },
-  { no:209, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3235394',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-19', eta:'2026-07-13', cds:'308645677450', co:'xong', st:'DONE', pic:'Tiến Anh' },
-  { no:210, di:'',         proj:'N323', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'YM THRONE 020E',            carrier:'HMM',        bill:'HANA93889600',      pol:'HẢI PHÒNG',    pod:'BUSAN',                 etd:'2026-06-15', eta:'2026-06-24', cds:'308635091940', co:'',      st:'DONE', pic:'' },
-  { no:211, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'ZIM MOUNT DENALI 14/E',     carrier:'THI',        bill:'122600043073138',   pol:'HẢI PHÒNG',    pod:'CHARLESTON',            etd:'2026-06-23', eta:'2026-08-13', cds:'308651703420', co:'xong', st:'DONE', pic:'Alex Soe' },
-  { no:212, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:0,  gw:12877,   vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-06-18', eta:'2026-06-20', cds:'308649702710', co:'không',st:'DONE', pic:'' },
-  { no:213, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'PRIDE PACIFIC 2624E',       carrier:'HANS',       bill:'122600043300213',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-26', eta:'2026-07-27', cds:'308667497040', co:'xong', st:'DONE', pic:'' },
-  { no:214, di:'',         proj:'E307', et:'E52', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:2160,    vessel:'S26AHA10006400',            carrier:'MAERSK',     bill:'HA100006400',       pol:'Nội Bài',      pod:'MALPENSA / MILANO',     etd:'2026-06-28', eta:'',           cds:'308683421710', co:'không',st:'DONE', pic:'' },
-  { no:215, di:'',         proj:'A294', et:'B11', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600381016',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698556740', co:'không',st:'DONE', pic:'' },
-  { no:216, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:7,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600388649',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698461800', co:'xong', st:'DONE', pic:'' },
-  { no:217, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 366',               carrier:'HANS',       bill:'122600043751698',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-11', eta:'2026-07-21', cds:'308699779050', co:'xong', st:'DONE', pic:'' },
-  { no:218, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1146856, vessel:'MV ALIOTH M2609E',          carrier:'Age Lines',  bill:'122600044126567',   pol:'MIPEC',        pod:'JEDDAH',                etd:'2026-07-14', eta:'',           cds:'308725851030', co:'xong', st:'DONE', pic:'Thể' },
-  { no:219, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:11, gw:72307,   vessel:'ZIM MOUNT VINSON 11/E',     carrier:'Everok',     bill:'OEGHPH26070169',    pol:'HẢI PHÒNG',    pod:'CHARLESTON - SC',       etd:'2026-07-13', eta:'2026-08-19', cds:'308730609850', co:'xong', st:'DONE', pic:'Alex Soe' },
-  { no:220, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308711989740', co:'xong', st:'DONE', pic:'' },
-  { no:221, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308712007940', co:'xong', st:'DONE', pic:'' },
-  { no:222, di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1803000, vessel:'DA HONG XIA',               carrier:'Age Lines',  bill:'122600044097134',   pol:'MIPEC',        pod:'HAMAD',                 etd:'2026-07-13', eta:'2026-08-12', cds:'308723601820', co:'nháp', st:'',     pic:'Hợi - Lộc' },
-  { no:223, di:'',         proj:'M296', et:'B13', item:'Nguyên vật liệu',     mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'TGL',        bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'Dũng' },
-  { no:224, di:'',         proj:'B272', et:'H21', item:'Bê tông chịu nhiệt',  mode:'AIR',   ctr:'',   qty:0,  gw:0,       vessel:'',                          carrier:'BACHVIET',   bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
-  { no:225, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'LUCKY BLESSING',            carrier:'HANS',       bill:'122600044698919',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-24', eta:'2026-08-17', cds:'308766961330', co:'nháp', st:'DONE', pic:'Tiến Anh' },
-  { no:226, di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'GP', qty:6,  gw:0,       vessel:'ULSAN DP',                  carrier:'HANS',       bill:'122600044685834',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-31', eta:'2026-09-26', cds:'308766075020', co:'nháp', st:'DONE', pic:'' },
-  { no:227, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1432486, vessel:'MV HG FLUSHING V.26189',    carrier:'VANTAGE',    bill:'122600045043310',   pol:'HÒN GAI',      pod:'JEDDAH',                etd:'2026-08-02', eta:'2026-08-31', cds:'308791253800', co:'xong', st:'DONE', pic:'Thể' },
-  { no:228, di:'',         proj:'A286', et:'B13', item:'Ống và phụ kiện',     mode:'FCL',   ctr:'HC', qty:5,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'OMC',        bill:'HASLS55260700184',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308837621800', co:'không',st:'DONE', pic:'' },
-  { no:229, di:'',         proj:'U326', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'COSCO SHIPPING JASMINE 040E',carrier:'VANTAGE',   bill:'122600045732794',   pol:'HẢI PHÒNG',    pod:'DALLAS',                etd:'2026-08-14', eta:'2026-09-11', cds:'308839222920', co:'nháp', st:'',     pic:'' },
-  { no:230, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:3,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
-  { no:231, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
-  { no:232, di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
-  { no:233, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'HAIAN DELL 045S',           carrier:'TGL',        bill:'ONEYHANGB7351800',  pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-08-24', eta:'2026-09-02', cds:'',             co:'chưa', st:'DONE', pic:'' },
-  { no:234, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:8790,    vessel:'TK6203',                    carrier:'',           bill:'235-96347963',      pol:'HÀ NỘI',       pod:'CHARLESTON',            etd:'2026-08-08', eta:'2026-08-15', cds:'308826227310', co:'không',st:'DONE', pic:'Alex Soe' },
-  { no:235, di:'',         proj:'U316', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:3372,    vessel:'K40601',                    carrier:'',           bill:'',                  pol:'HÀ NỘI',       pod:'CHICAGO',               etd:'2026-08-10', eta:'',           cds:'308830592030', co:'không',st:'DONE', pic:'' },
-  { no:236, di:'',         proj:'U302', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1214196, vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046169129',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872062350', co:'chưa', st:'',     pic:'Hùng' },
-  { no:237, di:'',         proj:'U292', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:92714,   vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046196808',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872711140', co:'chưa', st:'',     pic:'' },
-  { no:238, di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1410643, vessel:'',                          carrier:'VANTAGE',    bill:'',                  pol:'MIPEC',        pod:'KING ABDULLAH, KSA',    etd:'2026-09-09', eta:'2026-09-12', cds:'308933001000', co:'chưa', st:'',     pic:'' },
-  { no:239, di:'',         proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1745187, vessel:'DERYOUNG SUNSHINE V.1004',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'SEAFRONT, BATAAN',      etd:'2026-09-10', eta:'2026-09-12', cds:'308934603300', co:'không',st:'DONE', pic:'' },
-  { no:240, di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'GP', qty:1,  gw:0,       vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'6464205540',        pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
-  { no:241, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:12, gw:47755,   vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'COAU6464205550',    pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-18', eta:'',           cds:'',             co:'chưa', st:'',     pic:'' },
-  { no:242, di:'',         proj:'A286', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:2482950, vessel:'',                          carrier:'Dolphin',    bill:'122600046281372',   pol:'Nam Đình Vũ',  pod:'TANJUNG SETAPA',        etd:'2026-08-27', eta:'',           cds:'',             co:'không',st:'DONE', pic:'' },
-  { no:243, di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'HAIAN VIEW 174S',           carrier:'ONE',        bill:'ONEYHANGB7351800',  pol:'Nam Hải ĐV',   pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'308941841960', co:'chưa', st:'',     pic:'' },
-  { no:244, di:'',         proj:'M296', et:'B13', item:'Van & phụ kiện',      mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'Nam Đình Vũ',  pod:'KHALIFA PORT, ABU DHABI',etd:'2026-09-16',eta:'',           cds:'',             co:'không',st:'',     pic:'Dũng' },
-  { no:245, di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:13, gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'TÂN VŨ',       pod:'',                      etd:'2026-09-14', eta:'',           cds:'',             co:'',      st:'',     pic:'Dũng' },
-  { no:246, di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'SUNNY ACACIA 2614N',        carrier:'KMTC',       bill:'VN01159819',        pol:'TÂN VŨ',       pod:'BUSAN',                 etd:'2026-09-14', eta:'',           cds:'308944958510', co:'',      st:'',     pic:'Dũng' },
-  { no:247, di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'ZIM MOUNT DENALI 15/E',     carrier:'ZIM',        bill:'ZIMUHAI80249982',   pol:'HITC',         pod:'CHARLESTON',            etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
+  { no:161, dlv:'FOB', di:'26/12/25', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:10, gw:0,       vessel:'',                          carrier:'HANS',       bill:'100FX22181',        pol:'',             pod:'',                      etd:'2026-01-02', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:162, dlv:'FOB', di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'CEVA',       bill:'6439419590',        pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:163, dlv:'FOB', di:'01/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'',                          carrier:'HANS',       bill:'HANA37472400',      pol:'',             pod:'',                      etd:'2026-01-01', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:164, dlv:'FCA', di:'',         proj:'U273', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'EVEROK',     bill:'ZIMUHAI80192611',   pol:'',             pod:'',                      etd:'2026-01-09', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:165, dlv:'FOB', di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:939085,  vessel:'VIOLET ACE V.J2601E',       carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-13', eta:'',           cds:'308144141340', co:'',      st:'DONE', pic:'' },
+  { no:166, dlv:'FOB', di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:933312,  vessel:'MV DA HONG XIA V084',       carrier:'Age Lines',  bill:'',                  pol:'Đoạn Xá',      pod:'',                      etd:'2026-01-15', eta:'',           cds:'308154866300', co:'',      st:'DONE', pic:'' },
+  { no:167, dlv:'FOB', di:'11/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'STEPHANIA K 030S',          carrier:'HANS',       bill:'2316869530',        pol:'Nam Đình Vũ',  pod:'',                      etd:'2026-01-14', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:168, dlv:'FCA', di:'11/01/26', proj:'F0243',et:'E62', item:'Băng tải than',       mode:'FCL',   ctr:'OT', qty:10, gw:0,       vessel:'MSC ELBA III HV552R',       carrier:'DSV',        bill:'EBKG15369448',      pol:'HITC',         pod:'',                      etd:'2026-01-14', eta:'',           cds:'308146589500', co:'',      st:'DONE', pic:'' },
+  { no:169, dlv:'EXW', di:'16/01/26', proj:'(N/A)',et:'H21', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:440,     vessel:'RH0318/17JAN',              carrier:'TSL',        bill:'HORD26010034',      pol:'Nội Bài',      pod:'',                      etd:'2026-01-17', eta:'',           cds:'308156249130', co:'',      st:'DONE', pic:'' },
+  { no:170, dlv:'FOB', di:'17/01/26', proj:'E275', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:120182,  vessel:'MV YI HUI REN HAI V.2601',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-19', eta:'',           cds:'308166876750', co:'',      st:'DONE', pic:'' },
+  { no:171, dlv:'FOB', di:'17/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:330932,  vessel:'MV NAVI SUNNY V.MK2605E',   carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'',                      etd:'2026-01-21', eta:'',           cds:'308168378620', co:'',      st:'DONE', pic:'' },
+  { no:172, dlv:'FOB', di:'22/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:5,  gw:36066,   vessel:'EVER CERTAIN N072',         carrier:'HANS',       bill:'100GA00099',        pol:'VIP',          pod:'DAMMAM',                etd:'2026-01-30', eta:'',           cds:'308192619840', co:'xong', st:'DONE', pic:'' },
+  { no:173, dlv:'FOB', di:'28/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:866969,  vessel:'MV Silver Place',           carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:174, dlv:'FOB', di:'30/01/26', proj:'B272', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'HANSA COLOMBO 072S',        carrier:'BEE',        bill:'6443658670',        pol:'Nam Đình Vũ',  pod:'Algeria',               etd:'2026-02-03', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:175, dlv:'FOB', di:'30/01/26', proj:'M280', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:0,       vessel:'Hai Duong 09',              carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'DAMMAM',                etd:'2026-02-05', eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:176, dlv:'FOB', di:'30/01/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'CSCL GLOBE 074W',           carrier:'HANS',       bill:'2319584390',        pol:'HẢI PHÒNG',    pod:'DAMMAM',                etd:'2026-02-13', eta:'',           cds:'308250960160', co:'xong', st:'DONE', pic:'' },
+  { no:177, dlv:'DAP', di:'07/02/26', proj:'A286', et:'B13', item:'Van & phụ kiện',      mode:'XETAI', ctr:'',   qty:0,  gw:11,      vessel:'Xe tải',                    carrier:'',           bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-02-10', eta:'',           cds:'308243874542', co:'',      st:'DONE', pic:'' },
+  { no:178, dlv:'FOB', di:'11/02/26', proj:'E275', et:'E52', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:240288,  vessel:'XIN HAI TONG 502 V.SE2604', carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'VENICE',                etd:'2026-03-06', eta:'',           cds:'308285316750', co:'',      st:'DONE', pic:'' },
+  { no:179, dlv:'FCA', di:'23/02/26', proj:'U302', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-03-01', eta:'',           cds:'308271773300', co:'',      st:'DONE', pic:'' },
+  { no:180, dlv:'FOB', di:'23/02/26', proj:'M277', et:'E31', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'PEGASUS GLORY 2605N',       carrier:'HANS',       bill:'HANA31844600',      pol:'TÂN VŨ',       pod:'',                      etd:'2026-03-09', eta:'',           cds:'308281111630', co:'',      st:'DONE', pic:'' },
+  { no:181, dlv:'FOB', di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:5,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'6446168400',        pol:'HITC',         pod:'',                      etd:'2026-03-09', eta:'',           cds:'x',            co:'',      st:'DONE', pic:'' },
+  { no:182, dlv:'FOB', di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:7,  gw:0,       vessel:'COSCO BOSTON 202W',         carrier:'FLS',        bill:'',                  pol:'',             pod:'',                      etd:'2026-03-14', eta:'',           cds:'308320368440', co:'',      st:'DONE', pic:'' },
+  { no:183, dlv:'FOB', di:'02/03/26', proj:'U278', et:'E21', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:85349,   vessel:'COSCO VENICE / 077E',       carrier:'FLS',        bill:'HCM00000622A',      pol:'LẠCH HUYỆN',   pod:'SEATTLE, USA',          etd:'2026-03-22', eta:'',           cds:'308338797600', co:'',      st:'DONE', pic:'' },
+  { no:184, dlv:'FOB', di:'27/03/26', proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'COSCO SANTOS 098E',         carrier:'FLS',        bill:'6447802040',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-03-28', eta:'2026-04-02', cds:'',             co:'xong', st:'DONE', pic:'' },
+  { no:185, dlv:'FOB', di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FT', qty:5,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6447887970',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390500960', co:'xong', st:'DONE', pic:'' },
+  { no:186, dlv:'FOB', di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448786270',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390501660', co:'xong', st:'DONE', pic:'' },
+  { no:187, dlv:'FOB', di:'27/03/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:2,  gw:0,       vessel:'',                          carrier:'FLS',        bill:'6448858740',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-04', eta:'',           cds:'308390502360', co:'xong', st:'DONE', pic:'' },
+  { no:188, dlv:'FOB', di:'09/04/26', proj:'U278', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'XIN DAN DONG 560E',         carrier:'FLS',        bill:'6450295080',        pol:'',             pod:'SEATTLE, USA',          etd:'2026-04-18', eta:'2026-05-18', cds:'308440580360', co:'xong', st:'DONE', pic:'' },
+  { no:189, dlv:'FOB', di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:12005,   vessel:'ULSAN 616S',                carrier:'Hapag Lloyd',bill:'HNSE26040085',      pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-16', eta:'2026-06-11', cds:'308428675720', co:'xong', st:'DONE', pic:'' },
+  { no:190, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'',                          carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'308468447030', co:'không',st:'DONE', pic:'' },
+  { no:191, dlv:'FOB', di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR+OT',qty:4,gw:0,       vessel:'TANJUNG PELEPAS',           carrier:'Hapag Lloyd',bill:'24437755',          pol:'LẠCH HUYỆN',   pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-29', eta:'2026-06-08', cds:'308474052410', co:'xong', st:'DONE', pic:'' },
+  { no:192, dlv:'FOB', di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:3,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3132126',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467133460', co:'xong', st:'DONE', pic:'' },
+  { no:193, dlv:'FOB', di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3123585',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308467353040', co:'xong', st:'DONE', pic:'' },
+  { no:194, dlv:'FOB', di:'10/04/26', proj:'F0216',et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'OT', qty:1,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'CMA',        bill:'SGN3137067',        pol:'TÂN VŨ',       pod:'ROTTERDAM, NETHERLANDS',etd:'2026-04-27', eta:'2026-06-13', cds:'308466862820', co:'xong', st:'DONE', pic:'' },
+  { no:195, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:34709,   vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX06929',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-09', eta:'',           cds:'308502713910', co:'xong', st:'DONE', pic:'' },
+  { no:196, dlv:'FOB', di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'CNC URANUS',                carrier:'Deugro',     bill:'SSEL00002808',      pol:'Nam Đình Vũ',  pod:'HAMAD',                 etd:'2026-05-10', eta:'',           cds:'308510165410', co:'xong', st:'DONE', pic:'' },
+  { no:197, dlv:'DAP', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'AMECC',        pod:'QUẢNG NGÃI',            etd:'2026-05-08', eta:'2026-05-10', cds:'308511147730', co:'không',st:'DONE', pic:'' },
+  { no:198, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'ULSAN 620S',                carrier:'HANS',       bill:'HLCUSGN2604BCOX0',  pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-14', eta:'2026-07-04', cds:'308517503030', co:'xong', st:'DONE', pic:'' },
+  { no:199, dlv:'FOB', di:'22/05/26', proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:8,  gw:0,       vessel:'GOLDEN STAR 1 6622N',       carrier:'TGL',        bill:'ONEHANG51252500',   pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-14', eta:'2026-05-19', cds:'308525960430', co:'xong', st:'DONE', pic:'' },
+  { no:200, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:15, gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518811700', co:'xong', st:'DONE', pic:'' },
+  { no:201, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600296752',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308522968850', co:'không',st:'DONE', pic:'' },
+  { no:202, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:9,  gw:0,       vessel:'EVER CANDID 0536-085S',     carrier:'TGL',        bill:'EGLV237600265130',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-05-17', eta:'2026-05-23', cds:'308518528420', co:'xong', st:'DONE', pic:'' },
+  { no:203, dlv:'FOB', di:'22/05/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 175',               carrier:'HANS',       bill:'100GX08243',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-05-31', eta:'2026-06-26', cds:'308581412440', co:'xong', st:'DONE', pic:'' },
+  { no:204, dlv:'FOB', di:'01/06/26', proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:26337,   vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3205497',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-08', eta:'2026-07-06', cds:'308607521150', co:'nháp', st:'DONE', pic:'' },
+  { no:205, dlv:'EXW', di:'30/05/26', proj:'A286', et:'B13', item:'Nguyên vật liệu',     mode:'BV',    ctr:'',   qty:0,  gw:438,     vessel:'HANSA COLOMBO 080S',        carrier:'',           bill:'',                  pol:'',             pod:'',                      etd:'2026-05-30', eta:'2026-06-05', cds:'308582594040', co:'',      st:'DONE', pic:'' },
+  { no:206, dlv:'FCA', di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1248215, vessel:'BBC TOKYO Voy.1386005',     carrier:'THORENSEN',  bill:'BBCTOKYO',          pol:'MIPEC',        pod:'ALABAMA, USA',          etd:'2026-06-08', eta:'2026-07-08', cds:'308621763020', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:207, dlv:'FOB', di:'23/05/26', proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1163540, vessel:'MV DERYOUNG SPRING',        carrier:'VOSA',       bill:'HPBA6061601',       pol:'MIPEC',        pod:'SEAFRONT PORT, BATAAN', etd:'2026-06-13', eta:'2026-06-21', cds:'308573994800', co:'không',st:'DONE', pic:'' },
+  { no:208, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'122600042708807',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-13', eta:'2026-07-11', cds:'308625698530', co:'xong', st:'DONE', pic:'' },
+  { no:209, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'CMA CGM VISBY',             carrier:'HANS',       bill:'SGN3235394',        pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-19', eta:'2026-07-13', cds:'308645677450', co:'xong', st:'DONE', pic:'Tiến Anh' },
+  { no:210, dlv:'FOB', di:'',         proj:'N323', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'YM THRONE 020E',            carrier:'HMM',        bill:'HANA93889600',      pol:'HẢI PHÒNG',    pod:'BUSAN',                 etd:'2026-06-15', eta:'2026-06-24', cds:'308635091940', co:'',      st:'DONE', pic:'' },
+  { no:211, dlv:'FCA', di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'ZIM MOUNT DENALI 14/E',     carrier:'THI',        bill:'122600043073138',   pol:'HẢI PHÒNG',    pod:'CHARLESTON',            etd:'2026-06-23', eta:'2026-08-13', cds:'308651703420', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:212, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'XETAI', ctr:'',   qty:0,  gw:12877,   vessel:'',                          carrier:'AMECC',      bill:'',                  pol:'HẢI PHÒNG',    pod:'QUẢNG NGÃI',            etd:'2026-06-18', eta:'2026-06-20', cds:'308649702710', co:'không',st:'DONE', pic:'' },
+  { no:213, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:5,  gw:0,       vessel:'PRIDE PACIFIC 2624E',       carrier:'HANS',       bill:'122600043300213',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-06-26', eta:'2026-07-27', cds:'308667497040', co:'xong', st:'DONE', pic:'' },
+  { no:214, dlv:'FCA', di:'',         proj:'E307', et:'E52', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:2160,    vessel:'S26AHA10006400',            carrier:'MAERSK',     bill:'HA100006400',       pol:'Nội Bài',      pod:'MALPENSA / MILANO',     etd:'2026-06-28', eta:'',           cds:'308683421710', co:'không',st:'DONE', pic:'' },
+  { no:215, dlv:'FOB', di:'',         proj:'A294', et:'B11', item:'Bu lông',             mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600381016',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698556740', co:'không',st:'DONE', pic:'' },
+  { no:216, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:7,  gw:0,       vessel:'EVER CANDID 0543-087S',     carrier:'TGL',        bill:'EGLV237600388649',  pol:'HẢI PHÒNG',    pod:'TANJUNG PELEPAS',       etd:'2026-07-03', eta:'2026-07-08', cds:'308698461800', co:'xong', st:'DONE', pic:'' },
+  { no:217, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'WAN HAI 366',               carrier:'HANS',       bill:'122600043751698',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-11', eta:'2026-07-21', cds:'308699779050', co:'xong', st:'DONE', pic:'' },
+  { no:218, dlv:'FOB', di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1146856, vessel:'MV ALIOTH M2609E',          carrier:'Age Lines',  bill:'122600044126567',   pol:'MIPEC',        pod:'JEDDAH',                etd:'2026-07-14', eta:'',           cds:'308725851030', co:'xong', st:'DONE', pic:'Thể' },
+  { no:219, dlv:'FCA', di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:11, gw:72307,   vessel:'ZIM MOUNT VINSON 11/E',     carrier:'Everok',     bill:'OEGHPH26070169',    pol:'HẢI PHÒNG',    pod:'CHARLESTON - SC',       etd:'2026-07-13', eta:'2026-08-19', cds:'308730609850', co:'xong', st:'DONE', pic:'Alex Soe' },
+  { no:220, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308711989740', co:'xong', st:'DONE', pic:'' },
+  { no:221, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:1,  gw:0,       vessel:'AS ANNE 020S',              carrier:'TGL',        bill:'2026_2696',         pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-07-13', eta:'2026-07-19', cds:'308712007940', co:'xong', st:'DONE', pic:'' },
+  { no:222, dlv:'FOB', di:'',         proj:'M291', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1803000, vessel:'DA HONG XIA',               carrier:'Age Lines',  bill:'122600044097134',   pol:'MIPEC',        pod:'HAMAD',                 etd:'2026-07-13', eta:'2026-08-12', cds:'308723601820', co:'nháp', st:'',     pic:'Hợi - Lộc' },
+  { no:223, dlv:'DAP', di:'',         proj:'M296', et:'B13', item:'Nguyên vật liệu',     mode:'XETAI', ctr:'',   qty:1,  gw:0,       vessel:'',                          carrier:'TGL',        bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'Dũng' },
+  { no:224, dlv:'C&F', di:'',         proj:'B272', et:'H21', item:'Bê tông chịu nhiệt',  mode:'AIR',   ctr:'',   qty:0,  gw:0,       vessel:'',                          carrier:'BACHVIET',   bill:'',                  pol:'',             pod:'',                      etd:'',           eta:'',           cds:'',             co:'',      st:'DONE', pic:'' },
+  { no:225, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'LUCKY BLESSING',            carrier:'HANS',       bill:'122600044698919',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-24', eta:'2026-08-17', cds:'308766961330', co:'nháp', st:'DONE', pic:'Tiến Anh' },
+  { no:226, dlv:'FOB', di:'',         proj:'M277', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'GP', qty:6,  gw:0,       vessel:'ULSAN DP',                  carrier:'HANS',       bill:'122600044685834',   pol:'HẢI PHÒNG',    pod:'JEDDAH',                etd:'2026-07-31', eta:'2026-09-26', cds:'308766075020', co:'nháp', st:'DONE', pic:'' },
+  { no:227, dlv:'FOB', di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1432486, vessel:'MV HG FLUSHING V.26189',    carrier:'VANTAGE',    bill:'122600045043310',   pol:'HÒN GAI',      pod:'JEDDAH',                etd:'2026-08-02', eta:'2026-08-31', cds:'308791253800', co:'xong', st:'DONE', pic:'Thể' },
+  { no:228, dlv:'FCA', di:'',         proj:'A286', et:'B13', item:'Ống và phụ kiện',     mode:'FCL',   ctr:'HC', qty:5,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'OMC',        bill:'HASLS55260700184',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308837621800', co:'không',st:'DONE', pic:'' },
+  { no:229, dlv:'FOB', di:'',         proj:'U326', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'COSCO SHIPPING JASMINE 040E',carrier:'VANTAGE',   bill:'122600045732794',   pol:'HẢI PHÒNG',    pod:'DALLAS',                etd:'2026-08-14', eta:'2026-09-11', cds:'308839222920', co:'nháp', st:'',     pic:'' },
+  { no:230, dlv:'FCA', di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:3,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:231, dlv:'FCA', di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:6,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:232, dlv:'FCA', di:'',         proj:'M296', et:'E52', item:'Thép kết cấu',        mode:'FCL',   ctr:'DC', qty:1,  gw:0,       vessel:'HEUNG-A YOUNG 2613N',       carrier:'Deugro',     bill:'HASLS55260700183',  pol:'GREEN',        pod:'BUSAN',                 etd:'2026-08-24', eta:'2026-08-30', cds:'308818896062', co:'chưa', st:'DONE', pic:'Dũng' },
+  { no:233, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'HC', qty:2,  gw:0,       vessel:'HAIAN DELL 045S',           carrier:'TGL',        bill:'ONEYHANGB7351800',  pol:'HẢI PHÒNG',    pod:'PASIR GUDANG',          etd:'2026-08-24', eta:'2026-09-02', cds:'',             co:'chưa', st:'DONE', pic:'' },
+  { no:234, dlv:'FCA', di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:8790,    vessel:'TK6203',                    carrier:'',           bill:'235-96347963',      pol:'HÀ NỘI',       pod:'CHARLESTON',            etd:'2026-08-08', eta:'2026-08-15', cds:'308826227310', co:'không',st:'DONE', pic:'Alex Soe' },
+  { no:235, dlv:'FCA', di:'',         proj:'U316', et:'E62', item:'Thép kết cấu',        mode:'AIR',   ctr:'',   qty:0,  gw:3372,    vessel:'K40601',                    carrier:'',           bill:'',                  pol:'HÀ NỘI',       pod:'CHICAGO',               etd:'2026-08-10', eta:'',           cds:'308830592030', co:'không',st:'DONE', pic:'' },
+  { no:236, dlv:'FAS', di:'',         proj:'U302', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1214196, vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046169129',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872062350', co:'chưa', st:'',     pic:'Hùng' },
+  { no:237, dlv:'FAS', di:'',         proj:'U292', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:92714,   vessel:'MV AAL ANTWERP Voy.26006',  carrier:'THORENSEN',  bill:'122600046196808',   pol:'MIPEC',        pod:'NORFOLK',               etd:'2026-08-19', eta:'2026-08-21', cds:'308872711140', co:'chưa', st:'',     pic:'' },
+  { no:238, dlv:'FOB', di:'',         proj:'M304', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1410643, vessel:'',                          carrier:'VANTAGE',    bill:'',                  pol:'MIPEC',        pod:'KING ABDULLAH, KSA',    etd:'2026-09-09', eta:'2026-09-12', cds:'308933001000', co:'chưa', st:'',     pic:'' },
+  { no:239, dlv:'FOB', di:'',         proj:'A290', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:1745187, vessel:'DERYOUNG SUNSHINE V.1004',  carrier:'Age Lines',  bill:'',                  pol:'MIPEC',        pod:'SEAFRONT, BATAAN',      etd:'2026-09-10', eta:'2026-09-12', cds:'308934603300', co:'không',st:'DONE', pic:'' },
+  { no:240, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Bu lông',             mode:'FCL',   ctr:'GP', qty:1,  gw:0,       vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'6464205540',        pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
+  { no:241, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:12, gw:47755,   vessel:'HANSA COLOMBO 086S',        carrier:'Cosco',      bill:'COAU6464205550',    pol:'Nam Đình Vũ',  pod:'PASIR GUDANG',          etd:'2026-09-18', eta:'',           cds:'',             co:'chưa', st:'',     pic:'' },
+  { no:242, dlv:'FOB', di:'',         proj:'A286', et:'E62', item:'Thép kết cấu',        mode:'BV',    ctr:'',   qty:0,  gw:2482950, vessel:'',                          carrier:'Dolphin',    bill:'122600046281372',   pol:'Nam Đình Vũ',  pod:'TANJUNG SETAPA',        etd:'2026-08-27', eta:'',           cds:'',             co:'không',st:'DONE', pic:'' },
+  { no:243, dlv:'FOB', di:'',         proj:'A294', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:4,  gw:0,       vessel:'HAIAN VIEW 174S',           carrier:'ONE',        bill:'ONEYHANGB7351800',  pol:'Nam Hải ĐV',   pod:'PASIR GUDANG',          etd:'2026-09-15', eta:'',           cds:'308941841960', co:'chưa', st:'',     pic:'' },
+  { no:244, dlv:'FCA', di:'',         proj:'M296', et:'B13', item:'Van & phụ kiện',      mode:'FCL',   ctr:'HC', qty:1,  gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'Nam Đình Vũ',  pod:'KHALIFA PORT, ABU DHABI',etd:'2026-09-16',eta:'',           cds:'',             co:'không',st:'',     pic:'Dũng' },
+  { no:245, dlv:'FOB', di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:13, gw:0,       vessel:'PRIDE PACIFIC 2634E',       carrier:'CMA',        bill:'SGN3421579',        pol:'TÂN VŨ',       pod:'',                      etd:'2026-09-14', eta:'',           cds:'',             co:'',      st:'',     pic:'Dũng' },
+  { no:246, dlv:'FOB', di:'',         proj:'M313', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'FR', qty:6,  gw:0,       vessel:'SUNNY ACACIA 2614N',        carrier:'KMTC',       bill:'VN01159819',        pol:'TÂN VŨ',       pod:'BUSAN',                 etd:'2026-09-14', eta:'',           cds:'308944958510', co:'',      st:'',     pic:'Dũng' },
+  { no:247, dlv:'FOB', di:'',         proj:'U276', et:'E62', item:'Thép kết cấu',        mode:'FCL',   ctr:'HC', qty:4,  gw:0,       vessel:'ZIM MOUNT DENALI 15/E',     carrier:'ZIM',        bill:'ZIMUHAI80249982',   pol:'HITC',         pod:'CHARLESTON',            etd:'2026-09-15', eta:'',           cds:'',             co:'',      st:'',     pic:'' },
 ];
 
 /* =============== GLOBAL STATE =============== */
@@ -2495,7 +2516,7 @@ function filterLogistic() {
 }
 
 let lgTimelineChart = null, lgSupChart = null, lgDelayChart = null;
-let exMonthChart = null, exProjChart = null, exItemChart = null, exStatusChart = null;
+let exMonthChart = null, exProjChart = null, exItemChart = null, exTypeChart = null, exPolChart = null, exDlvChart = null;
 let lgTableMode = 'in';
 
 function renderLogistic() {
@@ -2783,13 +2804,12 @@ const EX_ST_COLORS = { 'Hoàn tất': '#2fb344', 'Đang thực hiện': '#4299e1
 const EX_ST_ORDER  = ['Hoàn tất', 'Đang thực hiện', 'Muộn'];
 
 /* ---- KHỐI LƯỢNG LÔ XUẤT ----
- * File nguồn chỉ có Q'ty GW (kg) cho hàng rời (BV), AIR và xe tải; hàng FCL bỏ trống.
- * Để mọi biểu đồ đều quy về TẤN, KL của lô FCL được quy đổi từ số container theo hệ số
- * dưới đây (sửa hệ số tại đây khi có số liệu chuẩn, hoặc đặt = 0 để loại khỏi thống kê).
+ * Chỉ lấy đúng số cân thực tế ở cột Q'ty GW (kg) của file nguồn, KHÔNG suy luận/quy đổi.
+ * Lô chưa có GW (phần lớn hàng FCL) được tính KL = 0 và đếm riêng ở card
+ * "Lô chưa có số cân GW" để biết phạm vi dữ liệu còn thiếu.
  * ---------------------------- */
-const CTR_TON = { 'HC': 25, 'DC': 22, 'GP': 22, 'FR': 28, 'OT': 26, 'FT': 28, 'FR+OT': 27, '': 24 };
-const exTon   = r => r.gw ? r.gw / 1000 : (r.qty || 0) * (CTR_TON[r.ctr] !== undefined ? CTR_TON[r.ctr] : CTR_TON['']);
-const exIsEst = r => !r.gw && (r.qty || 0) > 0;
+const exTon   = r => (r.gw || 0) / 1000;
+const exNoGW  = r => !r.gw;
 
 /* Trạng thái lô xuất — "muộn" xác định bằng ETA:
    DONE → Hoàn tất; chưa DONE mà đã quá ETA → Muộn; còn lại → Đang thực hiện */
@@ -2809,22 +2829,29 @@ const monthKey = d => d ? d.slice(0, 7) : '';
 
 function renderExport() {
   const rows = filterExport();
-  const shipped   = rows.filter(r => r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0);
   const tonAll    = rows.reduce((a, r) => a + exTon(r), 0);
-  const tonReal   = rows.reduce((a, r) => a + (r.gw ? r.gw / 1000 : 0), 0);
+  const totCtr    = rows.reduce((a, r) => a + (r.qty || 0), 0);
+  const withGW    = rows.filter(r => r.gw);
+  const noGW      = rows.filter(exNoGW);
+  const noGWCtr   = noGW.reduce((a, r) => a + (r.qty || 0), 0);
+  const shipped   = rows.filter(r => r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0);
   const tonShip   = shipped.reduce((a, r) => a + exTon(r), 0);
   const lateRows  = rows.filter(r => exStatus(r) === 'Muộn');
   const tonLate   = lateRows.reduce((a, r) => a + exTon(r), 0);
   const doneRows  = rows.filter(r => exStatus(r) === 'Hoàn tất');
   const tonDone   = doneRows.reduce((a, r) => a + exTon(r), 0);
   const donePct   = tonAll ? (tonDone / tonAll * 100) : 0;
-  const realPct   = tonAll ? (tonReal / tonAll * 100) : 0;
 
   document.getElementById('ex-kpis').innerHTML = `
     <div class="metric-card info-box info-primary">
       <div class="metric-label">Tổng KL xuất</div>
       <div><span class="metric-value">${fmt1(tonAll)}</span><span class="metric-unit">Tấn</span></div>
-      <div class="metric-sub">${rows.length} lô · ${realPct.toFixed(2)}% là KL cân thực tế (GW)</div>
+      <div class="metric-sub">Số cân GW của ${withGW.length}/${rows.length} lô</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tổng container</div>
+      <div><span class="metric-value" style="color:var(--info)">${fmt(totCtr)}</span><span class="metric-unit">CTR</span></div>
+      <div class="metric-sub">${rows.filter(r => (r.qty || 0) > 0).length} lô đi container</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Đã xuất (qua ETD)</div>
@@ -2835,6 +2862,11 @@ function renderExport() {
       <div class="metric-label" style="color:var(--danger);">🚨 KL đang muộn</div>
       <div><span class="metric-value" style="color:var(--danger)">${fmt1(tonLate)}</span><span class="metric-unit">Tấn</span></div>
       <div class="metric-sub">${lateRows.length} lô quá ETA mà chưa hoàn tất</div>
+    </div>
+    <div class="metric-card" style="border-left:4px solid var(--warning);">
+      <div class="metric-label" style="color:var(--warning);">⚠️ Lô chưa có số cân GW</div>
+      <div><span class="metric-value" style="color:var(--warning)">${noGW.length}</span><span class="metric-unit">lô</span></div>
+      <div class="metric-sub">${fmt(noGWCtr)} container chưa vào được thống kê KL</div>
     </div>
     <div class="metric-card info-box info-success">
       <div class="metric-label">Tỷ lệ hoàn tất (theo KL)</div>
@@ -2847,57 +2879,124 @@ function renderExport() {
   renderExportTable(rows);
 }
 
+/* Gom nhóm theo 1 chiều bất kỳ → { key, ton, ctr, lot } đã sort giảm dần theo Tấn */
+function exGroup(rows, keyFn, emptyLabel) {
+  const m = {};
+  rows.forEach(r => {
+    const k = keyFn(r) || emptyLabel;
+    if (!m[k]) m[k] = { ton: 0, ctr: 0, lot: 0, nogw: 0 };
+    m[k].ton += exTon(r); m[k].ctr += (r.qty || 0); m[k].lot++;
+    if (exNoGW(r)) m[k].nogw++;
+  });
+  return Object.entries(m).map(([key, v]) => ({ key, ...v })).sort((a, b) => b.ton - a.ton);
+}
+
+/* Hbar 1 dataset theo Tấn — dùng chung cho Item of goods / POL */
+function exHBar(canvasId, axisId, data, monospace) {
+  setHBarHeight(canvasId, Math.max(3, data.length));
+  const ds = [{ label: 'Tấn', data: data.map(r => r.ton), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
+  const max = computeMaxX(ds, false);
+  const chart = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels: data.map(r => r.key), datasets: ds },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? fmtC(v) : '' },
+        tooltip: {
+          callbacks: {
+            label: c => ` ${fmt1(c.raw)} Tấn`,
+            afterBody: (items) => {
+              const r = data[items[0].dataIndex];
+              return `\n${r.lot} lô · ${fmt(r.ctr)} container` + (r.nogw ? `\n${r.nogw} lô chưa có GW (không tính vào KL)` : '');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { display: false, beginAtZero: true, max },
+        y: { grid: { display: false }, ticks: { font: { size: 12, family: monospace ? 'monospace' : undefined } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
+      }
+    }
+  });
+  renderHBarAxis(axisId, max, ds, false);
+  return chart;
+}
+
+/* Doughnut theo Tấn — dùng chung cho Export type / Delivery term */
+function exDoughnut(canvasId, data, palette) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'doughnut',
+    data: { labels: data.map(r => r.key), datasets: [{ data: data.map(r => r.ton), backgroundColor: palette, borderWidth: 2, borderColor: '#fff' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 6 } },
+        datalabels: { color: '#fff', font: { size: 12, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? fmtC(v) : '' },
+        tooltip: {
+          callbacks: {
+            label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const pc = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${fmt1(c.raw)} Tấn (${pc}%)`; },
+            afterLabel: c => ` ${data[c.dataIndex].lot} lô · ${fmt(data[c.dataIndex].ctr)} CTR` + (data[c.dataIndex].nogw ? ` · ${data[c.dataIndex].nogw} lô chưa có GW` : '')
+          }
+        }
+      },
+      cutout: '55%'
+    }
+  });
+}
+
+const EX_PALETTE = ['#0054a6', '#2fb344', '#f7a531', '#4299e1', '#d63939', '#7c3aed', '#94a3b8', '#0ea5e9'];
+
 function renderExportCharts(rows) {
-  // ===== CHART 1: Khối lượng xuất theo tháng (thực vs quy đổi) =====
-  const months = [...new Set(rows.map(r => monthKey(r.etd)).filter(Boolean))].sort();
-  const realByM = months.map(m => rows.filter(r => monthKey(r.etd) === m && r.gw).reduce((a, r) => a + r.gw / 1000, 0));
-  const estByM  = months.map(m => rows.filter(r => monthKey(r.etd) === m && !r.gw).reduce((a, r) => a + exTon(r), 0));
+  // ===== CHART 1: KL xuất theo tháng (ETD) + số container =====
+  const months  = [...new Set(rows.map(r => monthKey(r.etd)).filter(Boolean))].sort();
+  const tonByM  = months.map(m => rows.filter(r => monthKey(r.etd) === m).reduce((a, r) => a + exTon(r), 0));
+  const ctrByM  = months.map(m => rows.filter(r => monthKey(r.etd) === m).reduce((a, r) => a + (r.qty || 0), 0));
   const mLabel  = months.map(m => { const [y, mm] = m.split('-'); return `T${Number(mm)}/${y.slice(2)}`; });
 
   if (exMonthChart) exMonthChart.destroy();
   exMonthChart = new Chart(document.getElementById('chart-ex-month'), {
-    type: 'bar',
     data: {
       labels: mLabel,
       datasets: [
-        { label: 'KL cân thực tế (GW)',     data: realByM, backgroundColor: '#0054a6', stack: 'kl', borderRadius: 2 },
-        { label: 'KL ước tính (từ số cont)', data: estByM,  backgroundColor: '#93c5fd', stack: 'kl', borderRadius: { topLeft: 3, topRight: 3 } },
+        { type: 'bar',  label: 'Khối lượng (GW)', data: tonByM, backgroundColor: '#0054a6', borderRadius: { topLeft: 3, topRight: 3 }, yAxisID: 'y', order: 2 },
+        { type: 'line', label: 'Số container', data: ctrByM, borderColor: '#f7a531', backgroundColor: '#f7a531',
+          borderWidth: 3, tension: 0.3, pointRadius: 4, yAxisID: 'y1', order: 1 },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 6 } },
         datalabels: {
-          color: (c) => c.datasetIndex === 0 ? '#fff' : '#1e3a8a',
-          font: { size: 11, weight: '700' }, anchor: 'center', align: 'center',
-          formatter: (v) => v >= 100 ? fmtC(v) : ''
+          color: (c) => c.dataset.type === 'line' ? '#b45309' : '#1d273b',
+          font: { size: 11, weight: '700' },
+          anchor: 'end',
+          align: 'top', offset: 2,
+          formatter: (v, c) => c.dataset.type === 'line' ? (v > 0 ? v : '') : (v >= 100 ? fmtC(v) : '')
         },
-        tooltip: {
-          callbacks: {
-            label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn`,
-            footer: (items) => `Tổng: ${fmt1(items.reduce((a, i) => a + i.raw, 0))} Tấn`
-          }
-        }
+        tooltip: { callbacks: { label: c => c.dataset.type === 'line' ? ` ${c.dataset.label}: ${fmt(c.raw)} CTR` : ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn` } }
       },
       scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
-        y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => fmtC(v), font: { size: 10 } }, title: { display: true, text: 'Tấn', font: { size: 11 } } }
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y:  { beginAtZero: true, position: 'left', grid: { color: '#f1f5f9' }, ticks: { callback: v => fmtC(v), font: { size: 10 } }, title: { display: true, text: 'Tấn', font: { size: 11 } } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'CTR', font: { size: 11 } } }
       }
     }
   });
 
-  // ===== CHART 2: Khối lượng theo dự án × trạng thái =====
+  // ===== CHART 2: KL theo dự án × trạng thái =====
   const pMap = {};
   rows.forEach(r => {
-    if (!pMap[r.proj]) pMap[r.proj] = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0, ton: 0, lot: 0 };
+    if (!pMap[r.proj]) pMap[r.proj] = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0, ton: 0, ctr: 0, lot: 0, nogw: 0 };
     const t = exTon(r);
     pMap[r.proj][exStatus(r)] += t;
-    pMap[r.proj].ton += t;
-    pMap[r.proj].lot++;
+    pMap[r.proj].ton += t; pMap[r.proj].ctr += (r.qty || 0); pMap[r.proj].lot++;
+    if (exNoGW(r)) pMap[r.proj].nogw++;
   });
   const pTop = Object.entries(pMap).map(([k, v]) => ({ proj: k, ...v }))
-    .sort((a, b) => b.ton - a.ton).slice(0, 10);
+    .filter(r => r.ton > 0).sort((a, b) => b.ton - a.ton).slice(0, 10);
 
   if (exProjChart) exProjChart.destroy();
   setHBarHeight('chart-ex-proj', Math.max(3, pTop.length));
@@ -2920,7 +3019,7 @@ function renderExportCharts(rows) {
             label: c => ` ${c.dataset.label}: ${fmt1(c.raw)} Tấn`,
             afterBody: (items) => {
               const r = pTop[items[0].dataIndex];
-              return `\nTổng ${fmt1(r.ton)} Tấn · ${r.lot} lô`;
+              return `\nTổng ${fmt1(r.ton)} Tấn · ${fmt(r.ctr)} CTR · ${r.lot} lô` + (r.nogw ? `\n${r.nogw} lô chưa có GW (không tính vào KL)` : '');
             }
           }
         }
@@ -2933,68 +3032,21 @@ function renderExportCharts(rows) {
   });
   renderHBarAxis('chart-ex-proj-axis', exProjMax, exProjDatasets, true);
 
-  // ===== CHART 3: Cơ cấu nguyên vật liệu theo khối lượng =====
-  const iMap = {};
-  rows.forEach(r => {
-    const k = r.item || '(Chưa phân loại)';
-    if (!iMap[k]) iMap[k] = { ton: 0, lot: 0 };
-    iMap[k].ton += exTon(r); iMap[k].lot++;
-  });
-  const iTop = Object.entries(iMap).map(([k, v]) => ({ item: k, ...v })).sort((a, b) => b.ton - a.ton).slice(0, 8);
-
+  // ===== CHART 3: Cơ cấu nguyên vật liệu (Item of goods) =====
   if (exItemChart) exItemChart.destroy();
-  setHBarHeight('chart-ex-item', Math.max(3, iTop.length));
-  const exItemDatasets = [{ label: 'Tấn', data: iTop.map(r => r.ton), backgroundColor: '#0054a6', borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.85 }];
-  const exItemMax = computeMaxX(exItemDatasets, false);
-  exItemChart = new Chart(document.getElementById('chart-ex-item'), {
-    type: 'bar',
-    data: { labels: iTop.map(r => r.item), datasets: exItemDatasets },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        datalabels: { color: '#1d273b', font: { size: 12, weight: '700' }, anchor: 'end', align: 'right', offset: 4, formatter: v => v > 0 ? fmtC(v) : '' },
-        tooltip: {
-          callbacks: {
-            label: c => ` ${fmt1(c.raw)} Tấn`,
-            afterBody: (items) => `\n${iTop[items[0].dataIndex].lot} lô xuất`
-          }
-        }
-      },
-      scales: {
-        x: { display: false, beginAtZero: true, max: exItemMax },
-        y: { grid: { display: false }, ticks: { font: { size: 12 } }, afterFit: (ax) => { ax.width = HBAR_Y_WIDTH; } }
-      }
-    }
-  });
-  renderHBarAxis('chart-ex-item-axis', exItemMax, exItemDatasets, false);
+  exItemChart = exHBar('chart-ex-item', 'chart-ex-item-axis', exGroup(rows, r => r.item, '(Chưa phân loại)').filter(r => r.ton > 0).slice(0, 8), false);
 
-  // ===== CHART 4: Phân bổ trạng thái theo khối lượng =====
-  const stMap = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0 };
-  const stLot = { 'Hoàn tất': 0, 'Đang thực hiện': 0, 'Muộn': 0 };
-  rows.forEach(r => { const k = exStatus(r); stMap[k] += exTon(r); stLot[k]++; });
-  if (exStatusChart) exStatusChart.destroy();
-  exStatusChart = new Chart(document.getElementById('chart-ex-status'), {
-    type: 'doughnut',
-    data: {
-      labels: EX_ST_ORDER,
-      datasets: [{ data: EX_ST_ORDER.map(k => stMap[k]), backgroundColor: EX_ST_ORDER.map(k => EX_ST_COLORS[k]), borderWidth: 2, borderColor: '#fff' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
-        datalabels: { color: '#fff', font: { size: 13, weight: '700' }, anchor: 'center', align: 'center', formatter: v => v > 0 ? fmtC(v) : '' },
-        tooltip: {
-          callbacks: {
-            label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); const p = t ? (c.raw / t * 100).toFixed(2) : 0; return ` ${c.label}: ${fmt1(c.raw)} Tấn (${p}%)`; },
-            afterLabel: c => ` ${stLot[c.label]} lô`
-          }
-        }
-      },
-      cutout: '58%'
-    }
-  });
+  // ===== CHART 4: Export type =====
+  if (exTypeChart) exTypeChart.destroy();
+  exTypeChart = exDoughnut('chart-ex-type', exGroup(rows, r => r.et, '(Trống)').filter(r => r.ton > 0).slice(0, 8), EX_PALETTE);
+
+  // ===== CHART 5: Cảng xuất (POL) =====
+  if (exPolChart) exPolChart.destroy();
+  exPolChart = exHBar('chart-ex-pol', 'chart-ex-pol-axis', exGroup(rows, r => r.pol, '(Chưa có POL)').filter(r => r.ton > 0).slice(0, 8), false);
+
+  // ===== CHART 6: Điều kiện giao hàng (Delivery term) =====
+  if (exDlvChart) exDlvChart.destroy();
+  exDlvChart = exDoughnut('chart-ex-dlv', exGroup(rows, r => r.dlv, '(Trống)').filter(r => r.ton > 0).slice(0, 8), EX_PALETTE);
 }
 
 function renderExportTable(rows) {
@@ -3003,17 +3055,10 @@ function renderExportTable(rows) {
   tbody.innerHTML = '';
   const sorted = [...rows].sort((a, b) => (b.etd || '').localeCompare(a.etd || ''));
   if (sorted.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="18" class="empty-state">Không có dữ liệu xuất.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Không có dữ liệu xuất.</td></tr>`;
     return;
   }
   const modeIcon = { FCL: '🚢 FCL', LCL: '🚢 LCL', BV: '🚢 BV', AIR: '✈️ AIR', XETAI: '🚚 Xe tải' };
-  const coPill = (v) => {
-    if (v === 'xong')  return `<span class="status-pill badge-success">Xong</span>`;
-    if (v === 'nháp')  return `<span class="status-pill badge-warning">Nháp</span>`;
-    if (v === 'chưa')  return `<span class="status-pill badge-danger">Chưa</span>`;
-    if (v === 'không') return `<span class="status-pill badge-info">Không</span>`;
-    return '<span class="cell-muted">—</span>';
-  };
   const stPill = (r) => {
     const st = exStatus(r);
     const cls = st === 'Hoàn tất' ? 'badge-success' : (st === 'Muộn' ? 'badge-danger' : 'badge-info');
@@ -3021,30 +3066,21 @@ function renderExportTable(rows) {
     const hint = (st === 'Muộn' && d !== null) ? ` title="Quá ETA ${fmtD(r.eta)} ${Math.abs(d)} ngày"` : '';
     return `<span class="status-pill ${cls}"${hint}>${st}</span>`;
   };
-  sorted.forEach((r, i) => {
-    const shipped = r.etd && daysTo(r.etd) !== null && daysTo(r.etd) <= 0;
-    const cdsCell = r.cds
-      ? `<span style="font-family:monospace; font-size:11px;">${r.cds}</span>`
-      : (shipped ? `<span class="status-pill badge-danger">Thiếu</span>` : '<span class="cell-muted">—</span>');
+  sorted.forEach((r) => {
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td>${r.no}</td>
         <td class="cell-project">${r.proj}</td>
-        <td style="font-family:monospace; font-size:11px;">${r.et}</td>
+        <td style="font-family:monospace; font-size:12px;">${r.et}</td>
         <td>${r.item || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${modeIcon[r.mode] || r.mode || '—'}</td>
-        <td style="font-size:12px;">${r.ctr || '<span class="cell-muted">—</span>'}</td>
-        <td class="num">${r.qty || '<span class="cell-muted">—</span>'}</td>
-        <td class="num"${exIsEst(r) ? ' title="KL ước tính từ số container — lô này chưa có số cân GW"' : ''}>${exTon(r) ? (exIsEst(r) ? '~' : '') + fmt1(exTon(r)) : '<span class="cell-muted">—</span>'}</td>
+        <td style="font-size:12px; font-weight:600;">${r.dlv || '<span class="cell-muted">—</span>'}</td>
+        <td class="num">${r.qty ? fmt(r.qty) + (r.ctr ? ` <span class="cell-muted">${r.ctr}</span>` : '') : '<span class="cell-muted">—</span>'}</td>
+        <td class="num">${r.gw ? fmt1(exTon(r)) : '<span class="cell-muted">chưa có GW</span>'}</td>
         <td style="font-size:12px;">${r.vessel || '<span class="cell-muted">—</span>'}</td>
-        <td class="cell-muted">${r.carrier || '—'}</td>
-        <td style="font-family:monospace; font-size:11px;">${r.bill || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${r.pol || '<span class="cell-muted">—</span>'}</td>
-        <td style="font-size:12px;">${r.pod || '<span class="cell-muted">—</span>'}</td>
         <td style="font-size:12px;">${fmtD(r.etd)}</td>
         <td style="font-size:12px;">${fmtD(r.eta)}</td>
-        <td>${cdsCell}</td>
-        <td>${coPill(r.co)}</td>
         <td>${stPill(r)}</td>
       </tr>
     `);
@@ -3065,7 +3101,7 @@ document.querySelectorAll('.tbl-toggle button').forEach(btn => {
       : '📤 Chi tiết Xuất — Danh sách lô xuất khẩu';
     document.getElementById('lg-tbl-sub').innerHTML = isIn
       ? 'Ưu tiên: quá hạn storage → sắp về Amecc (≤7 ngày) → sắp quá hạn storage (≤5 ngày)'
-      : 'Sắp xếp theo ETD mới nhất · Cột Tờ khai "Thiếu" = đã ETD nhưng chưa có CDs No';
+      : 'Sắp xếp theo ETD mới nhất · KL chỉ hiển thị khi lô đã có số cân GW trong file nguồn';
   });
 });
 
